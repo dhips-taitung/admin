@@ -23,7 +23,7 @@
 
   .container {
     width: 100%;
-    max-width: 600px; /* 手機優先，限制最大寬度 */
+    max-width: 600px;
     margin: 0 auto;
     padding: 20px;
   }
@@ -99,7 +99,7 @@
   }
 
   /* ============================
-     結果卡片顯示 (修改重點)
+     結果卡片顯示
      ============================ */
   #order_status {
     display: flex;
@@ -113,16 +113,20 @@
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     overflow: hidden;
     animation: fadeIn 0.3s ease-in-out;
-    border: 1px solid #eee;
+    border: 1px solid #ddd; /* 稍微加深一點外框 */
   }
 
-  /* 卡片主標題 */
+  /* 
+   * 修改重點：卡片主標題 
+   * 改為白色背景、深色字、下方底線
+   */
   .card-header {
-    background: #0277bd; /* 深藍色標題列 */
-    color: white;
-    padding: 12px 15px;
+    background: #fff;        /* 白色背景，不突兀 */
+    color: #0277bd;          /* 深藍色文字，當作標題色 */
+    padding: 15px;
     font-weight: bold;
-    font-size: 1.1em;
+    font-size: 1.25em;       /* 字體稍微加大 */
+    border-bottom: 2px solid #f0f0f0; /* 灰色分隔線 */
     display: flex;
     align-items: center;
   }
@@ -131,47 +135,46 @@
     padding: 15px;
   }
 
-  /* 單筆資料列：使用 Flexbox 讓左右並排 */
+  /* 單筆資料列：左右並排 */
   .data-row {
     display: flex;
-    border: 1px solid #e0e0e0; /* 外框線 */
-    border-radius: 6px; /* 圓角 */
-    margin-bottom: 8px; /* 列與列的間距 */
-    overflow: hidden; /* 確保背景色不出界 */
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    overflow: hidden;
   }
 
   .data-row:last-child {
     margin-bottom: 0;
   }
 
-  /* 左側：標題 (Label) - 淡藍色背景、等寬 */
+  /* 左側：標題 (Label) - 淡藍色背景 */
   .data-label {
-    background-color: #e1f5fe; /* 淡藍色背景 */
-    color: #01579b; /* 深藍色文字 */
-    width: 110px; /* 固定寬度 */
-    min-width: 110px; /* 防止壓縮 */
+    background-color: #e1f5fe;
+    color: #01579b;
+    width: 110px;
+    min-width: 110px;
     padding: 10px;
     font-weight: bold;
     font-size: 0.95em;
     display: flex;
-    align-items: center; /* 垂直置中 */
-    justify-content: flex-start; /* 文字靠左 */
-    border-right: 1px solid #e0e0e0; /* 與右側的分隔線 */
+    align-items: center;
+    justify-content: flex-start;
+    border-right: 1px solid #e0e0e0;
   }
 
-  /* 右側：數值 (Value) - 白色背景、靠左對齊 */
+  /* 右側：數值 (Value) - 白色背景 */
   .data-value {
     background-color: #fff;
     color: #333;
     padding: 10px;
-    flex: 1; /* 佔據剩餘寬度 */
-    text-align: left; /* 文字靠左 */
-    word-break: break-all; /* 防止長文字破版 */
+    flex: 1;
+    text-align: left;
+    word-break: break-all;
     display: flex;
-    align-items: center; /* 垂直置中 */
+    align-items: center;
   }
 
-  /* 手機版適應：如果螢幕極小 (如 Fold 折疊機)，稍微調整字體 */
   @media (max-width: 340px) {
     .data-label { width: 90px; min-width: 90px; font-size: 0.85em; }
     .data-value { font-size: 0.9em; }
@@ -247,7 +250,7 @@ function doQuery(){
 
   const keyword = document.getElementById("uid").value.trim();
   const resultDiv = document.getElementById("order_status");
-  document.getElementById("uid").blur(); // 收鍵盤
+  document.getElementById("uid").blur();
   
   if(!keyword){
     alert("請輸入關鍵字");
