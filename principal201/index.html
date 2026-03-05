@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>校長管理首頁</title>
+
+<style>
+  :root {
+    --primary-color: #007bff;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --bg-color: #f4f6f9;
+  }
+
+  body {
+    font-family: "Microsoft JhengHei", system-ui, -apple-system, sans-serif;
+    background: var(--bg-color);
+    margin: 0;
+    padding: 20px;
+    color: #333;
+  }
+
+  .header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1000px;
+    margin: 0 auto 20px auto;
+  }
+
+  h1 { margin: 0; flex-grow: 1; text-align: center; }
+
+  /* 登入登出按鈕 */
+  .auth-btn {
+    padding: 8px 16px; border-radius: 6px; border: none;
+    cursor: pointer; font-weight: bold; transition: 0.2s;
+  }
+  .btn-login-trigger { background: var(--primary-color); color: white; }
+  .btn-logout { background: var(--danger-color); color: white; display: none; }
+
+  /* 管理面板 */
+  .admin-panel {
+    max-width: 900px; margin: 0 auto 30px auto; background: white;
+    padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    display: none;
+  }
+
+  .admin-panel h3 {
+    margin-top: 0; color: var(--primary-color); border-left: 5px solid var(--primary-color);
+    padding-left: 10px; margin-bottom: 15px;
+  }
+
+  .form-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+  .input-item { display: flex; flex-direction: column; flex: 1; min-width: 180px; }
+  .input-item label { font-size: 14px; margin-bottom: 5px; font-weight: bold; }
+  .input-item input { padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+
+  .btn-submit {
+    background: var(--success-color); color: white; border: none; padding: 10px 20px;
+    border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;
+  }
+
+  /* 登入視窗 */
+  .login-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center;
+    z-index: 1000;
+  }
+  .login-box { background: white; padding: 30px; border-radius: 12px; width: 300px; text-align: center; }
+  .login-box input { width: 100%; padding: 10px; margin: 15px 0; border: 1px solid #ddd; border-radius: 6px; }
+
+  /* 容器與卡片 */
+  .container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+  .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); width: 310px; }
+  .card h2 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 1.2rem; }
+
+  /* 項目樣式 */
+  .section { margin: 12px 0; padding-bottom: 8px; border-bottom: 1px dashed #f0f0f0; }
+  .section:last-child { border-bottom: none; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .section-title { font-weight: bold; color: #444; font-size: 0.95rem; }
+
+  /* 項目刪除按鈕 (預設隱藏，登入後透過 JS 控制顯示) */
+  .btn-item-delete {
+    background: none; border: none; color: #ccc; cursor: pointer; font-size: 14px;
+    padding: 2px 5px; border-radius: 4px; transition: 0.2s; display: none;
+  }
+  .btn-item-delete:hover { color: var(--danger-color); background: #fff1f0; }
+
+  .links a {
+    display: inline-block; padding: 6px 12px; background: var(--primary-color); color: white;
+    text-decoration: none; border-radius: 6px; font-size: 13px;
+  }
+  
+  .status-msg { font-size: 12px; margin-top: 10px; color: #888; text-align: center; }
+</style>
+</head>
+
+<body>
+
+<div class="header-container">
+    <button class="auth-btn btn-login-trigger" id="loginBtn" onclick="toggleLoginModal(true)">管理員登入</button>
+    <h1>校長管理首頁</h1>
+    <button class="auth-btn btn-logout" id="logoutBtn" onclick="logout()">登出</button>
+</div>
+
+<div class="admin-panel" id="adminPanel">
+  <h3>➕ 加入新網址</h3>
+  <div class="form-group">
+    <div class="input-item">
+      <label>網頁分類</label>
+      <input type="text" id="catInput" placeholder="分類名稱">
+    </div>
+    <div class="input-item">
+      <label>網頁名稱</label>
+      <input type="text" id="nameInput" placeholder="網頁標題">
+    </div>
+    <div class="input-item">
+      <label>網址 (URL)</label>
+      <input type="text" id="urlInput" placeholder="www.google.com">
+    </div>
+    <button class="btn-submit" id="submitBtn" onclick="addLink()">送出並同步</button>
+  </div>
+</div>
+
+<div class="status-msg" id="statusMsg">同步雲端資料中...</div>
+
+<div class="container" id="cardContainer"></div>
+
+<!-- 登入彈窗 -->
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+        <h3>管理員驗證</h3>
+        <input type="password" id="passInput" placeholder="請輸入驗證碼">
+        <button class="btn-submit" onclick="checkLogin()">登入</button>
+        <button style="border:none; background:none; cursor:pointer; color:#888; margin-top:10px;" onclick="toggleLoginModal(false)">取消</button>
+    </div>
+</div>
+
+<script>
+// ================= 設定區域 =================
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzng8RP11TELY3NdvD1qhRhK4rlu3UqnIhZasCocyPeTI5VbzvOqtMwbJUazvuI83yXIg/exec"; 
+const LOGIN_KEY = "sds_admin_logged_in";
+const CACHE_KEY = "sds_portal_cache";
+
+let siteData = [];
+let correctAuthCode = "";
+
+function init() {
+  const cache = localStorage.getItem(CACHE_KEY);
+  if (cache) {
+    siteData = JSON.parse(cache);
+    render();
+  }
+  loadFromSheet();
+  if (localStorage.getItem(LOGIN_KEY) === "true") showAdminUI(true);
+}
+
+async function loadFromSheet() {
+  try {
+    const response = await fetch(GAS_URL);
+    const result = await response.json();
+    correctAuthCode = result.authCode;
+    if (result.tableData) {
+      siteData = processSheetData(result.tableData);
+      localStorage.setItem(CACHE_KEY, JSON.stringify(siteData));
+      render();
+      document.getElementById('statusMsg').innerText = "雲端同步完成";
+    }
+  } catch (e) {
+    document.getElementById('statusMsg').innerText = "連線失敗，目前為離線模式";
+  }
+}
+
+function processSheetData(rows) {
+  const categories = {};
+  for (let i = 1; i < rows.length; i++) {
+    const [cat, name, url] = rows[i];
+    if (!cat || !name || !url) continue;
+    if (!categories[cat]) categories[cat] = { category: cat, sections: [] };
+    categories[cat].sections.push({ title: name, url: formatUrl(url) });
+  }
+  return Object.values(categories);
+}
+
+function formatUrl(url) {
+  return (url.startsWith('http') || url.startsWith('/') || url.includes('./')) ? url : 'https://' + url;
+}
+
+function render() {
+  const container = document.getElementById('cardContainer');
+  const isLoggedIn = localStorage.getItem(LOGIN_KEY) === "true";
+  
+  container.innerHTML = siteData.map(catObj => `
+    <div class="card">
+      <h2>${catObj.category}</h2>
+      ${catObj.sections.map(sec => `
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">${sec.title}</div>
+            <button class="btn-item-delete" 
+                    style="display: ${isLoggedIn ? 'block' : 'none'}" 
+                    onclick="deleteLink('${catObj.category}', '${sec.title}', '${sec.url}')" 
+                    title="刪除此項目">🗑️</button>
+          </div>
+          <div class="links">
+            <a href="${sec.url}" target="_blank" rel="noopener noreferrer">前往系統</a>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+// ================= 管理功能 =================
+
+async function addLink() {
+  const cat = document.getElementById('catInput').value.trim();
+  const name = document.getElementById('nameInput').value.trim();
+  const urlInput = document.getElementById('urlInput').value.trim();
+  if (!cat || !name || !urlInput) return alert('請填寫完整資訊');
+  
+  document.getElementById('statusMsg').innerText = "正在寫入雲端...";
+  try {
+    await fetch(GAS_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "add", category: cat, name: name, url: formatUrl(urlInput) })
+    });
+    document.getElementById('catInput').value = '';
+    document.getElementById('nameInput').value = '';
+    document.getElementById('urlInput').value = '';
+    await loadFromSheet();
+  } catch (e) { alert("同步失敗"); }
+}
+
+async function deleteLink(category, name, url) {
+  if (!confirm(`確定要刪除「${name}」嗎？`)) return;
+
+  document.getElementById('statusMsg').innerText = "正在從雲端刪除...";
+  try {
+    const response = await fetch(GAS_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "delete", category: category, name: name, url: url })
+    });
+    const result = await response.json();
+    if (result.result === "deleted") {
+      await loadFromSheet(); // 重新載入最新資料
+    }
+  } catch (e) {
+    alert("刪除失敗，請檢查網路。");
+  }
+}
+
+// ================= 登入邏輯 =================
+
+function toggleLoginModal(show) {
+    document.getElementById('loginOverlay').style.display = show ? 'flex' : 'none';
+    if(show) document.getElementById('passInput').focus();
+}
+
+function checkLogin() {
+    const input = document.getElementById('passInput').value;
+    if (input === correctAuthCode) {
+        localStorage.setItem(LOGIN_KEY, "true");
+        showAdminUI(true);
+        toggleLoginModal(false);
+        render(); // 重新渲染以顯示刪除按鈕
+    } else {
+        alert("驗證碼錯誤！");
+    }
+}
+
+function logout() {
+    localStorage.removeItem(LOGIN_KEY);
+    showAdminUI(false);
+    render(); // 重新渲染以隱藏刪除按鈕
+}
+
+function showAdminUI(isLogin) {
+    document.getElementById('adminPanel').style.display = isLogin ? 'block' : 'none';
+    document.getElementById('logoutBtn').style.display = isLogin ? 'block' : 'none';
+    document.getElementById('loginBtn').style.display = isLogin ? 'none' : 'block';
+}
+
+init();
+</script>
+
+</body>
+</html>
