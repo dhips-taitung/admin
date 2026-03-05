@@ -23,14 +23,14 @@
 
   .container {
     width: 100%;
-    max-width: 600px;
+    max-width: 600px; /* 手機優先，限制最大寬度 */
     margin: 0 auto;
     padding: 20px;
   }
 
   h2 {
     text-align: center;
-    color: #1a73e8;
+    color: #0277bd;
     margin-bottom: 20px;
     font-size: 1.5rem;
   }
@@ -65,12 +65,15 @@
     transition: border-color 0.3s;
     appearance: none;
   }
-  input[type="text"]:focus { border-color: #1a73e8; }
+
+  input[type="text"]:focus {
+    border-color: #0277bd;
+  }
 
   input[type="button"] {
     width: 100%;
     padding: 12px;
-    background-color: #1a73e8;
+    background-color: #0277bd;
     color: white;
     border: none;
     border-radius: 8px;
@@ -79,16 +82,24 @@
     cursor: pointer;
     transition: background-color 0.2s, transform 0.1s;
   }
-  input[type="button"]:active { transform: scale(0.98); background-color: #1557b0; }
-  input[type="button"]:disabled { background-color: #a0c3ff; cursor: wait; }
+
+  input[type="button"]:active {
+    transform: scale(0.98);
+    background-color: #01579b;
+  }
+  
+  input[type="button"]:disabled {
+    background-color: #b3e5fc;
+    cursor: wait;
+  }
 
   @media (min-width: 480px) {
     .input-group { flex-direction: row; }
-    input[type="button"] { width: auto; min-width: 100px; }
+    input[type="button"] { width: auto; min-width: 120px; }
   }
 
   /* ============================
-     結果卡片顯示 (靠左對齊版)
+     結果卡片顯示 (修改重點)
      ============================ */
   #order_status {
     display: flex;
@@ -105,60 +116,65 @@
     border: 1px solid #eee;
   }
 
+  /* 卡片主標題 */
   .card-header {
-    background: #1967d2; /* 深藍色底 */
-    color: #fff;          /* 白色字 */
-    padding: 12px 20px;
+    background: #0277bd; /* 深藍色標題列 */
+    color: white;
+    padding: 12px 15px;
     font-weight: bold;
     font-size: 1.1em;
-    border-bottom: 1px solid #dcdcdc;
+    display: flex;
+    align-items: center;
   }
-
+  
   .card-body {
-    padding: 15px 20px;
+    padding: 15px;
   }
 
-  /* 資料列 Flex 設定：靠左對齊 (flex-start) */
+  /* 單筆資料列：使用 Flexbox 讓左右並排 */
   .data-row {
     display: flex;
-    justify-content: flex-start; /* 靠左對齊 */
-    align-items: baseline;       /* 文字基線對齊 */
-    padding: 8px 0;
-    border-bottom: 1px dashed #eee; /* 改用虛線區隔 */
-    flex-wrap: wrap; /* 允許換行 */
+    border: 1px solid #e0e0e0; /* 外框線 */
+    border-radius: 6px; /* 圓角 */
+    margin-bottom: 8px; /* 列與列的間距 */
+    overflow: hidden; /* 確保背景色不出界 */
   }
 
   .data-row:last-child {
-    border-bottom: none;
+    margin-bottom: 0;
   }
 
-  /* 標題樣式：明顯顏色區隔 (標籤感) */
+  /* 左側：標題 (Label) - 淡藍色背景、等寬 */
   .data-label {
-    background-color: #e8f0fe; /* 淺藍底 */
-    color: #1967d2;            /* 深藍字 */
+    background-color: #e1f5fe; /* 淡藍色背景 */
+    color: #01579b; /* 深藍色文字 */
+    width: 110px; /* 固定寬度 */
+    min-width: 110px; /* 防止壓縮 */
+    padding: 10px;
     font-weight: bold;
-    font-size: 0.9em;
-    padding: 4px 8px;          /* 內距 */
-    border-radius: 4px;        /* 圓角 */
-    margin-right: 12px;        /* 與內容的距離 */
-    white-space: nowrap;       /* 不換行 */
-    flex-shrink: 0;            /* 不被壓縮 */
+    font-size: 0.95em;
+    display: flex;
+    align-items: center; /* 垂直置中 */
+    justify-content: flex-start; /* 文字靠左 */
+    border-right: 1px solid #e0e0e0; /* 與右側的分隔線 */
   }
 
-  /* 內容樣式 */
+  /* 右側：數值 (Value) - 白色背景、靠左對齊 */
   .data-value {
-    color: #202124;
-    font-weight: 500;
-    text-align: left; /* 靠左 */
-    flex: 1;          /* 佔滿剩餘空間 */
-    word-break: break-all;
-    line-height: 1.6;
+    background-color: #fff;
+    color: #333;
+    padding: 10px;
+    flex: 1; /* 佔據剩餘寬度 */
+    text-align: left; /* 文字靠左 */
+    word-break: break-all; /* 防止長文字破版 */
+    display: flex;
+    align-items: center; /* 垂直置中 */
   }
 
-  /* 極小螢幕調整 */
-  @media (max-width: 350px) {
-    .data-row { flex-direction: column; }
-    .data-label { margin-bottom: 4px; width: fit-content; }
+  /* 手機版適應：如果螢幕極小 (如 Fold 折疊機)，稍微調整字體 */
+  @media (max-width: 340px) {
+    .data-label { width: 90px; min-width: 90px; font-size: 0.85em; }
+    .data-value { font-size: 0.9em; }
   }
 
   .no-data, .error {
@@ -172,7 +188,7 @@
 
   .spinner {
     border: 4px solid #f3f3f3;
-    border-top: 4px solid #1a73e8;
+    border-top: 4px solid #0277bd;
     border-radius: 50%;
     width: 30px;
     height: 30px;
@@ -280,7 +296,7 @@ function doQuery(){
     for(let i = 1; i < obj.length; i++){
       const rowData = obj[i].data;
       
-      // 卡牌標題：使用 A 欄資料 (index 0)
+      // 卡牌主標題：使用 A 欄資料 (index 0)
       const titleData = rowData[0] || ("資料 #" + i);
 
       html += `
@@ -292,19 +308,19 @@ function doQuery(){
       // 遍歷所有欄位
       for(let j = 0; j < rowData.length; j++){
         
-        // 【重要】如果目前是第0欄 (A欄)，跳過不顯示 (因已在標題)
+        // 如果是第0欄 (A欄)，已在上方主標題顯示，故跳過
         if(j === 0) continue;
 
         let label = headers[j] || ("欄位" + (j+1));
         let value = rowData[j];
 
-        // 格式化生日 (第6欄, index=5)
+        // 格式化生日 (假設是第6欄, index=5)
         if(j === 5) value = formatDate(value);
 
         html += `
           <div class="data-row">
-            <span class="data-label">${label}</span>
-            <span class="data-value">${value}</span>
+            <div class="data-label">${label}</div>
+            <div class="data-value">${value}</div>
           </div>
         `;
       }
@@ -340,11 +356,11 @@ window.addEventListener("DOMContentLoaded", function(){
 <body>
 
 <div class="container">
-  <h2>學生資料查詢系統</h2>
+  <h2>資料查詢系統</h2>
 
   <div class="search-card">
     <div class="input-group">
-      <input type="text" id="uid" placeholder="請輸入關鍵字 (班級、姓名)">
+      <input type="text" id="uid" placeholder="請輸入關鍵字 (班級代碼或姓名)">
       <input type="button" id="btnQuery" value="查詢" onclick="doQuery()">
     </div>
   </div>
