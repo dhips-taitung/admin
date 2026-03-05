@@ -2,78 +2,163 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<!-- 設定 viewport，關鍵：讓手機版寬度正確縮放 -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>學生資料查詢系統</title>
 
 <style>
+  /* ============================
+     全域設定 (Reset & Base)
+     ============================ */
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
   body { 
-    font-family: "Microsoft JhengHei", sans-serif; 
-    padding: 20px; 
-    background-color: #f5f5f5;
-    max-width: 800px;
-    margin: 0 auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif;
+    background-color: #f0f2f5;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    font-size: 16px; /* 防止 iOS 輸入框自動縮放 */
+    line-height: 1.5;
   }
 
-  h2 { text-align: center; color: #333; }
-  
-  /* 搜尋區域樣式 */
-  .search-box {
+  /* 容器：手機版留邊距，電腦版限制最大寬度 */
+  .container {
+    width: 100%;
+    max-width: 600px; /* 手機優先設計，電腦版也不會太寬 */
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  h2 {
+    text-align: center;
+    color: #1a73e8;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+  }
+
+  /* ============================
+     搜尋區塊 (Search Box)
+     ============================ */
+  .search-card {
     background: white;
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-  
-  input[type="text"] {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 16px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    position: sticky; /* 讓搜尋框在捲動時稍微黏住上方(視情況) */
+    top: 10px;
+    z-index: 10;
   }
 
+  .input-group {
+    display: flex;
+    flex-direction: column; /* 手機預設垂直排列 */
+    gap: 12px;
+  }
+
+  /* 輸入框優化 */
+  input[type="text"] {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s;
+    appearance: none; /* 移除 iOS 預設陰影 */
+  }
+
+  input[type="text"]:focus {
+    border-color: #1a73e8;
+  }
+
+  /* 按鈕優化 */
   input[type="button"] {
-    padding: 10px 20px;
-    background-color: #4CAF50;
+    width: 100%;
+    padding: 12px;
+    background-color: #1a73e8;
     color: white;
     border: none;
-    border-radius: 4px;
-    cursor: pointer;
+    border-radius: 8px;
     font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
   }
 
-  input[type="button"]:hover { background-color: #45a049; }
-  input[type="button"]:disabled { background-color: #ccc; cursor: not-allowed; }
+  input[type="button"]:active {
+    transform: scale(0.98); /* 點擊回饋效果 */
+    background-color: #1557b0;
+  }
+  
+  input[type="button"]:disabled {
+    background-color: #a0c3ff;
+    cursor: wait;
+  }
 
-  /* 卡牌樣式 (直式排列) */
-  .card {
+  /* 電腦版/平板版樣式調整 (螢幕大於 480px) */
+  @media (min-width: 480px) {
+    .input-group {
+      flex-direction: row; /* 改為並排 */
+    }
+    input[type="button"] {
+      width: auto;
+      min-width: 100px;
+    }
+  }
+
+  /* ============================
+     結果顯示 (Cards)
+     ============================ */
+  #order_status {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .student-card {
     background: white;
-    border-radius: 8px;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     overflow: hidden;
-    border-top: 5px solid #4CAF50; /* 頂部裝飾條 */
+    animation: fadeIn 0.3s ease-in-out;
+    border: 1px solid #eee;
   }
 
   .card-header {
-    background-color: #f9f9f9;
-    padding: 10px 15px;
+    background: #e8f0fe;
+    color: #1967d2;
+    padding: 12px 20px;
     font-weight: bold;
-    border-bottom: 1px solid #eee;
-    color: #4CAF50;
+    font-size: 1.1em;
+    border-bottom: 1px solid #dcdcdc;
+    display: flex;
+    align-items: center;
+  }
+  
+  /* 裝飾性的小圖示或線條 */
+  .card-header::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 16px;
+    background: #1967d2;
+    margin-right: 10px;
+    border-radius: 2px;
   }
 
   .card-body {
     padding: 10px 20px;
   }
 
+  /* 資料列樣式 */
   .data-row {
     display: flex;
-    padding: 8px 0;
-    border-bottom: 1px solid #f0f0f0;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #f5f5f5;
+    flex-wrap: wrap; /* 允許換行 */
   }
 
   .data-row:last-child {
@@ -81,32 +166,56 @@
   }
 
   .data-label {
-    width: 120px; /* 標題寬度 */
-    font-weight: bold;
-    color: #666;
-    flex-shrink: 0;
+    color: #5f6368;
+    font-size: 0.9em;
+    min-width: 80px;
+    margin-right: 10px;
   }
 
   .data-value {
-    flex: 1;
-    color: #333;
-    word-break: break-all; /* 防止長文字破版 */
+    color: #202124;
+    font-weight: 500;
+    text-align: right;
+    flex: 1; /* 佔據剩餘空間 */
+    word-break: break-all; /* 防止長字串撐開 */
   }
 
-  /* 響應式：手機版讓標題和內容上下堆疊 */
-  @media (max-width: 480px) {
+  /* 極小螢幕調整：如果內容太長，強制換行 */
+  @media (max-width: 350px) {
     .data-row { flex-direction: column; }
-    .data-label { margin-bottom: 4px; color: #4CAF50; }
+    .data-value { text-align: left; margin-top: 4px; }
   }
 
-  .no-data { text-align: center; color: #777; margin-top: 20px; }
-  .error { color: red; text-align: center; margin-top: 10px; }
+  /* 訊息樣式 */
+  .no-data, .error {
+    text-align: center;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    color: #666;
+  }
+  .error { color: #d93025; background: #fce8e6; }
+
+  /* Loading Spinner */
+  .spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #1a73e8;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+  }
+
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
 </style>
 
 <script>
 
 // =========================
-// 設定區：請填入您的 Web App 網址
+// GAS 部署網址 (請填入您的 Web App URL)
 // =========================
 const GAS_URL = "https://script.google.com/macros/s/AKfycby50psP6jBwPYa06oItoeJTnCiSGP6V2qdNAB88Sw5AH-RlI0L5PnnHlephVQpCrxML0Q/exec";
 
@@ -129,25 +238,20 @@ function getAuthCode() {
 function formatDate(value){
   if (!value) return "";
   value = String(value).trim();
-
-  // 如果原本就是單純文字或數字，直接回傳 (避免誤判電話號碼)
+  
   if (!value.includes("T") && !value.includes("-") && !value.includes("/")) {
-      // 簡單判斷：如果不是 Date 物件轉出來的字串格式，通常不需要格式化
-      // 但為了保險，這裡只針對包含時間戳記的 ISO 格式處理
       return value; 
   }
 
   if (value.includes("T")) return value.split("T")[0];
   
-  // 嘗試解析日期
   const d = new Date(value);
-  if(!isNaN(d) && value.length > 6){ // 簡單過濾掉純數字
+  if(!isNaN(d) && value.length > 6){
     const y=d.getFullYear();
     const m=String(d.getMonth()+1).padStart(2,'0');
     const day=String(d.getDate()).padStart(2,'0');
     return y+"-"+m+"-"+day;
   }
-
   return value;
 }
 
@@ -158,8 +262,10 @@ function doQuery(){
 
   const keyword = document.getElementById("uid").value.trim();
   const resultDiv = document.getElementById("order_status");
-  resultDiv.innerHTML="";
-
+  
+  // 清空並收起鍵盤 (在手機上很實用)
+  document.getElementById("uid").blur();
+  
   if(!keyword){
     alert("請輸入學生關鍵字");
     return;
@@ -168,9 +274,10 @@ function doQuery(){
   const code = getAuthCode();
   if(!code) return;
 
+  // 顯示 Loading
   setLoading(true);
+  resultDiv.innerHTML = '<div class="spinner"></div><div style="text-align:center;color:#666;">查詢中...</div>';
 
-  // 組合查詢網址
   const get_url = GAS_URL + "?uid=" + encodeURIComponent(keyword) + "&code=" + encodeURIComponent(code);
 
   fetch(get_url)
@@ -186,51 +293,48 @@ function doQuery(){
       return; 
     }
 
-    // 驗證失敗
     if(obj.auth === false){
       alert(obj.message || "驗證碼錯誤");
-      sessionStorage.removeItem("authCode"); // 清除錯誤的驗證碼
+      sessionStorage.removeItem("authCode");
+      resultDiv.innerHTML = "";
       return;
     }
 
-    // 系統錯誤
     if(obj.ok === false){
       resultDiv.innerHTML = '<div class="error">' + (obj.message || "查詢發生錯誤") + '</div>';
       return;
     }
 
-    // 查無資料 (陣列只有標題列，或長度為0)
     if(!Array.isArray(obj) || obj.length <= 1){
-      resultDiv.innerHTML = '<div class="no-data">查無符合「' + keyword + '」的學生資料</div>';
+      resultDiv.innerHTML = '<div class="no-data">查無符合「' + keyword + '」的資料</div>';
       return;
     }
 
     // ===== 產生卡牌 HTML =====
-    const headers = obj[0].data; // 第一筆是標題列
+    const headers = obj[0].data; 
     let html = "";
 
-    // 從 i=1 開始迴圈 (避開標題列)
+    // 從 i=1 開始 (避開標題列)
     for(let i = 1; i < obj.length; i++){
       const rowData = obj[i].data;
       
-      html += '<div class="card">';
+      // 假設第1欄(index 0)是學號或姓名，用來當卡片標題。若無，則顯示 "學生資料"
+      // 這裡直接取 rowData[1] (姓名?) 或 rowData[0]
+      let cardTitle = rowData[0] || ("資料 #" + i);
+      // 如果想要顯示 "姓名"，需看您試算表的欄位順序，這裡預設顯示第一欄內容
       
-      // 卡牌標題 (使用第一欄位，通常是學號或姓名，視需求而定)
-      // 這裡簡單顯示 "學生資料 #i" 或是直接不顯示 Header，僅顯示內容
-      // 為了美觀，我們不設 Card Header，直接顯示內容列表
-      
-      html += '<div class="card-body">';
+      html += `
+        <div class="student-card">
+          <div class="card-header">${cardTitle}</div>
+          <div class="card-body">
+      `;
 
-      // 遍歷該列的所有欄位
       for(let j = 0; j < rowData.length; j++){
-        // 取得標題與數值
         let label = headers[j] || ("欄位" + (j+1));
         let value = rowData[j];
 
-        // 特定欄位日期處理 (假設第6欄 index=5 是生日)
-        if(j === 5) { 
-          value = formatDate(value);
-        }
+        // 格式化生日 (假設是第6欄, index=5)
+        if(j === 5) value = formatDate(value);
 
         html += `
           <div class="data-row">
@@ -240,8 +344,7 @@ function doQuery(){
         `;
       }
       
-      html += '</div>'; // end card-body
-      html += '</div>'; // end card
+      html += `</div></div>`; // end card-body, end card
     }
 
     resultDiv.innerHTML = html;
@@ -254,17 +357,18 @@ function doQuery(){
 }
 
 // =========================
-// Loading 控制
+// UI 狀態控制
 // =========================
 function setLoading(isLoading){
   var btn = document.getElementById("btnQuery");
   var input = document.getElementById("uid");
   btn.disabled = input.disabled = isLoading;
-  btn.value = isLoading ? "查詢中..." : "查詢";
+  btn.value = isLoading ? "..." : "查詢";
 }
 
-// 綁定 Enter 鍵
+// 綁定事件
 window.addEventListener("DOMContentLoaded", function(){
+  // 按下 Enter 鍵查詢
   document.getElementById("uid").addEventListener("keydown", function(e){
     if(e.key === "Enter") doQuery();
   });
@@ -275,15 +379,19 @@ window.addEventListener("DOMContentLoaded", function(){
 
 <body>
 
-<h2>學生資料查詢系統</h2>
+<div class="container">
+  <h2>學生資料查詢</h2>
 
-<div class="search-box">
-  <input type="text" id="uid" placeholder="請輸入學生關鍵字 (例如：姓名、學號)">
-  <input type="button" id="btnQuery" value="查詢" onclick="doQuery()">
-</div>
+  <div class="search-card">
+    <div class="input-group">
+      <input type="text" id="uid" placeholder="輸入關鍵字 (姓名、學號)">
+      <input type="button" id="btnQuery" value="查詢" onclick="doQuery()">
+    </div>
+  </div>
 
-<div id="order_status">
-  <!-- 搜尋結果將顯示於此 -->
+  <div id="order_status">
+    <!-- 結果區 -->
+  </div>
 </div>
 
 </body>
