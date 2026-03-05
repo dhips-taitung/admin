@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>學生資料查詢系統</title>
+
+<style>
+  body { 
+    font-family: "Microsoft JhengHei", sans-serif; 
+    padding: 20px; 
+    background-color: #f5f5f5;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  h2 { text-align: center; color: #333; }
+  
+  /* 搜尋區域樣式 */
+  .search-box {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  input[type="text"] {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+
+  input[type="button"] {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+
+  input[type="button"]:hover { background-color: #45a049; }
+  input[type="button"]:disabled { background-color: #ccc; cursor: not-allowed; }
+
+  /* 卡牌樣式 (直式排列) */
+  .card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    overflow: hidden;
+    border-top: 5px solid #4CAF50; /* 頂部裝飾條 */
+  }
+
+  .card-header {
+    background-color: #f9f9f9;
+    padding: 10px 15px;
+    font-weight: bold;
+    border-bottom: 1px solid #eee;
+    color: #4CAF50;
+  }
+
+  .card-body {
+    padding: 10px 20px;
+  }
+
+  .data-row {
+    display: flex;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .data-row:last-child {
+    border-bottom: none;
+  }
+
+  .data-label {
+    width: 120px; /* 標題寬度 */
+    font-weight: bold;
+    color: #666;
+    flex-shrink: 0;
+  }
+
+  .data-value {
+    flex: 1;
+    color: #333;
+    word-break: break-all; /* 防止長文字破版 */
+  }
+
+  /* 響應式：手機版讓標題和內容上下堆疊 */
+  @media (max-width: 480px) {
+    .data-row { flex-direction: column; }
+    .data-label { margin-bottom: 4px; color: #4CAF50; }
+  }
+
+  .no-data { text-align: center; color: #777; margin-top: 20px; }
+  .error { color: red; text-align: center; margin-top: 10px; }
+</style>
+
+<script>
+
+// =========================
+// 設定區：請填入您的 Web App 網址
+// =========================
+const GAS_URL = "https://script.google.com/macros/s/AKfycby50psP6jBwPYa06oItoeJTnCiSGP6V2qdNAB88Sw5AH-RlI0L5PnnHlephVQpCrxML0Q/exec";
+
+// =========================
+// 驗證碼處理
+// =========================
+function getAuthCode() {
+  let code = sessionStorage.getItem("authCode");
+  if (!code) {
+    code = prompt("請輸入驗證碼：");
+    if (!code) return null;
+    sessionStorage.setItem("authCode", code);
+  }
+  return code;
+}
+
+// =========================
+// 日期格式化 (yyyy-mm-dd)
+// =========================
+function formatDate(value){
+  if (!value) return "";
+  value = String(value).trim();
+
+  // 如果原本就是單純文字或數字，直接回傳 (避免誤判電話號碼)
+  if (!value.includes("T") && !value.includes("-") && !value.includes("/")) {
+      // 簡單判斷：如果不是 Date 物件轉出來的字串格式，通常不需要格式化
+      // 但為了保險，這裡只針對包含時間戳記的 ISO 格式處理
+      return value; 
+  }
+
+  if (value.includes("T")) return value.split("T")[0];
+  
+  // 嘗試解析日期
+  const d = new Date(value);
+  if(!isNaN(d) && value.length > 6){ // 簡單過濾掉純數字
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,'0');
+    const day=String(d.getDate()).padStart(2,'0');
+    return y+"-"+m+"-"+day;
+  }
+
+  return value;
+}
+
+// =========================
+// 查詢主程式
+// =========================
+function doQuery(){
+
+  const keyword = document.getElementById("uid").value.trim();
+  const resultDiv = document.getElementById("order_status");
+  resultDiv.innerHTML="";
+
+  if(!keyword){
+    alert("請輸入學生關鍵字");
+    return;
+  }
+
+  const code = getAuthCode();
+  if(!code) return;
+
+  setLoading(true);
+
+  // 組合查詢網址
+  const get_url = GAS_URL + "?uid=" + encodeURIComponent(keyword) + "&code=" + encodeURIComponent(code);
+
+  fetch(get_url)
+  .then(r => r.text())
+  .then(text => {
+    setLoading(false);
+
+    let obj;
+    try { 
+      obj = JSON.parse(text); 
+    } catch(e) { 
+      resultDiv.innerHTML = '<div class="error">資料解析失敗</div>'; 
+      return; 
+    }
+
+    // 驗證失敗
+    if(obj.auth === false){
+      alert(obj.message || "驗證碼錯誤");
+      sessionStorage.removeItem("authCode"); // 清除錯誤的驗證碼
+      return;
+    }
+
+    // 系統錯誤
+    if(obj.ok === false){
+      resultDiv.innerHTML = '<div class="error">' + (obj.message || "查詢發生錯誤") + '</div>';
+      return;
+    }
+
+    // 查無資料 (陣列只有標題列，或長度為0)
+    if(!Array.isArray(obj) || obj.length <= 1){
+      resultDiv.innerHTML = '<div class="no-data">查無符合「' + keyword + '」的學生資料</div>';
+      return;
+    }
+
+    // ===== 產生卡牌 HTML =====
+    const headers = obj[0].data; // 第一筆是標題列
+    let html = "";
+
+    // 從 i=1 開始迴圈 (避開標題列)
+    for(let i = 1; i < obj.length; i++){
+      const rowData = obj[i].data;
+      
+      html += '<div class="card">';
+      
+      // 卡牌標題 (使用第一欄位，通常是學號或姓名，視需求而定)
+      // 這裡簡單顯示 "學生資料 #i" 或是直接不顯示 Header，僅顯示內容
+      // 為了美觀，我們不設 Card Header，直接顯示內容列表
+      
+      html += '<div class="card-body">';
+
+      // 遍歷該列的所有欄位
+      for(let j = 0; j < rowData.length; j++){
+        // 取得標題與數值
+        let label = headers[j] || ("欄位" + (j+1));
+        let value = rowData[j];
+
+        // 特定欄位日期處理 (假設第6欄 index=5 是生日)
+        if(j === 5) { 
+          value = formatDate(value);
+        }
+
+        html += `
+          <div class="data-row">
+            <span class="data-label">${label}</span>
+            <span class="data-value">${value}</span>
+          </div>
+        `;
+      }
+      
+      html += '</div>'; // end card-body
+      html += '</div>'; // end card
+    }
+
+    resultDiv.innerHTML = html;
+
+  })
+  .catch(err => {
+    setLoading(false);
+    resultDiv.innerHTML = '<div class="error">系統連線失敗：' + err.message + '</div>';
+  });
+}
+
+// =========================
+// Loading 控制
+// =========================
+function setLoading(isLoading){
+  var btn = document.getElementById("btnQuery");
+  var input = document.getElementById("uid");
+  btn.disabled = input.disabled = isLoading;
+  btn.value = isLoading ? "查詢中..." : "查詢";
+}
+
+// 綁定 Enter 鍵
+window.addEventListener("DOMContentLoaded", function(){
+  document.getElementById("uid").addEventListener("keydown", function(e){
+    if(e.key === "Enter") doQuery();
+  });
+});
+
+</script>
+</head>
+
+<body>
+
+<h2>學生資料查詢系統</h2>
+
+<div class="search-box">
+  <input type="text" id="uid" placeholder="請輸入學生關鍵字 (例如：姓名、學號)">
+  <input type="button" id="btnQuery" value="查詢" onclick="doQuery()">
+</div>
+
+<div id="order_status">
+  <!-- 搜尋結果將顯示於此 -->
+</div>
+
+</body>
+</html>
