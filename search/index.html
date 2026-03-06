@@ -113,20 +113,17 @@
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     overflow: hidden;
     animation: fadeIn 0.3s ease-in-out;
-    border: 1px solid #ddd; /* 稍微加深一點外框 */
+    border: 1px solid #ddd;
   }
 
-  /* 
-   * 修改重點：卡片主標題 
-   * 改為白色背景、深色字、下方底線
-   */
+  /* 卡片主標題：白色背景、深藍字、灰底線 */
   .card-header {
-    background: #fff;        /* 白色背景，不突兀 */
-    color: #0277bd;          /* 深藍色文字，當作標題色 */
+    background: #fff;
+    color: #0277bd;
     padding: 15px;
     font-weight: bold;
-    font-size: 1.25em;       /* 字體稍微加大 */
-    border-bottom: 2px solid #f0f0f0; /* 灰色分隔線 */
+    font-size: 1.25em;
+    border-bottom: 2px solid #f0f0f0;
     display: flex;
     align-items: center;
   }
@@ -225,21 +222,27 @@ function getAuthCode() {
 }
 
 // =========================
-// 日期格式化
+// 日期格式化 (強制西元年月日)
 // =========================
 function formatDate(value){
   if (!value) return "";
   value = String(value).trim();
-  if (!value.includes("T") && !value.includes("-") && !value.includes("/")) return value; 
-  if (value.includes("T")) return value.split("T")[0];
   
-  const d = new Date(value);
-  if(!isNaN(d) && value.length > 6){
-    const y=d.getFullYear();
-    const m=String(d.getMonth()+1).padStart(2,'0');
-    const day=String(d.getDate()).padStart(2,'0');
-    return y+"-"+m+"-"+day;
+  // 如果內容含有 T (ISO格式)，直接切割取前面日期
+  if (value.includes("T")) {
+    return value.split("T")[0];
   }
+  
+  // 嘗試解析日期
+  const d = new Date(value);
+  // 檢查是否為有效日期且不是單純的短數字
+  if(!isNaN(d) && value.length > 5){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return y + "-" + m + "-" + day;
+  }
+  
   return value;
 }
 
@@ -311,14 +314,16 @@ function doQuery(){
       // 遍歷所有欄位
       for(let j = 0; j < rowData.length; j++){
         
-        // 如果是第0欄 (A欄)，已在上方主標題顯示，故跳過
+        // 跳過 A 欄 (index 0)
         if(j === 0) continue;
 
         let label = headers[j] || ("欄位" + (j+1));
         let value = rowData[j];
 
-        // 格式化生日 (假設是第6欄, index=5)
-        if(j === 5) value = formatDate(value);
+        // 格式化 G 欄生日 (index 6, A=0, B=1...G=6)
+        if(j === 6) {
+           value = formatDate(value);
+        }
 
         html += `
           <div class="data-row">
