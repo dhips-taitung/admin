@@ -251,17 +251,25 @@ function formatDate(value){
 // =========================
 function doQuery(){
 
-  const keyword = document.getElementById("uid").value.trim();
+  const inputEl = document.getElementById("uid");
+  const keyword = inputEl.value.trim();
   const resultDiv = document.getElementById("order_status");
-  document.getElementById("uid").blur();
+  
+  // 收起手機鍵盤
+  inputEl.blur();
   
   if(!keyword){
     alert("請輸入關鍵字");
     return;
   }
 
+  // 驗證碼檢查
   const code = getAuthCode();
   if(!code) return;
+
+  // ===== 修改處：在這裡清空輸入框 =====
+  inputEl.value = ""; 
+  // =================================
 
   setLoading(true);
   resultDiv.innerHTML = '<div class="spinner"></div><div style="text-align:center;color:#666;">查詢中...</div>';
