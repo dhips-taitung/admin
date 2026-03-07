@@ -70,15 +70,14 @@
     border-color: #0277bd;
   }
 
-  /* 按鈕群組容器 */
+  /* 按鈕群組 */
   .btn-group {
     display: flex;
     gap: 10px;
   }
 
-  /* 按鈕通用樣式 */
   input[type="button"] {
-    flex: 1; /* 讓兩個按鈕平均分配寬度 */
+    flex: 1; /* 按鈕平均分配寬度 */
     padding: 12px;
     color: white;
     border: none;
@@ -105,14 +104,13 @@
   }
   .btn-student:hover { background-color: #01579b; }
 
-  /* 家長查詢按鈕 (綠色，做區隔) */
+  /* 家長查詢按鈕 (綠色) */
   .btn-parent {
     background-color: #2e7d32;
   }
   .btn-parent:hover { background-color: #1b5e20; }
 
-
-  /* 電腦版：讓輸入框和按鈕橫向排列 */
+  /* 電腦版/平板樣式 */
   @media (min-width: 550px) {
     .input-group { 
       flex-direction: row; 
@@ -273,7 +271,7 @@ function formatDate(value){
 
 // =========================
 // 查詢主程式
-// 參數 searchMode: 'student' | 'parent'
+// searchMode: 'student' | 'parent'
 // =========================
 function doQuery(searchMode){
 
@@ -281,15 +279,13 @@ function doQuery(searchMode){
   const keyword = inputEl.value.trim();
   const resultDiv = document.getElementById("order_status");
   
-  // 收起手機鍵盤
-  inputEl.blur();
+  inputEl.blur(); // 收起鍵盤
   
   if(!keyword){
     alert("請輸入關鍵字");
     return;
   }
 
-  // 驗證碼檢查
   const code = getAuthCode();
   if(!code) return;
 
@@ -299,7 +295,7 @@ function doQuery(searchMode){
   setLoading(true);
   resultDiv.innerHTML = '<div class="spinner"></div><div style="text-align:center;color:#666;">查詢中...</div>';
 
-  // 組合 URL，增加 mode 參數
+  // 組合 URL，傳遞 mode 參數
   const get_url = GAS_URL + 
                   "?uid=" + encodeURIComponent(keyword) + 
                   "&code=" + encodeURIComponent(code) + 
@@ -383,7 +379,7 @@ function doQuery(searchMode){
   });
 }
 
-// UI 狀態控制 (針對兩個按鈕)
+// UI 狀態控制
 function setLoading(isLoading){
   var btnS = document.getElementById("btnStudent");
   var btnP = document.getElementById("btnParent");
@@ -393,7 +389,7 @@ function setLoading(isLoading){
 }
 
 window.addEventListener("DOMContentLoaded", function(){
-  // 綁定 Enter 鍵，預設執行「學生查詢」
+  // Enter 鍵預設觸發學生查詢
   document.getElementById("uid").addEventListener("keydown", function(e){
     if(e.key === "Enter") doQuery('student');
   });
@@ -411,7 +407,6 @@ window.addEventListener("DOMContentLoaded", function(){
     <div class="input-group">
       <input type="text" id="uid" placeholder="請輸入關鍵字">
       
-      <!-- 修改為兩個按鈕 -->
       <div class="btn-group">
         <input type="button" id="btnStudent" class="btn-student" value="學生查詢" onclick="doQuery('student')">
         <input type="button" id="btnParent" class="btn-parent" value="家長查詢" onclick="doQuery('parent')">
