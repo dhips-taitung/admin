@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>資料查詢系統</title>
+
+<style>
+  /* ============================
+     全域設定
+     ============================ */
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
+  body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif;
+    background-color: #f0f2f5;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  h2 {
+    text-align: center;
+    color: #0277bd;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+  }
+
+  /* ============================
+     搜尋區塊
+     ============================ */
+  .search-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    position: sticky;
+    top: 10px;
+    z-index: 10;
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s;
+    appearance: none;
+  }
+
+  input[type="text"]:focus {
+    border-color: #0277bd;
+  }
+
+  /* 按鈕群組容器 */
+  .btn-group {
+    display: flex;
+    gap: 10px;
+  }
+
+  /* 按鈕通用樣式 */
+  input[type="button"] {
+    flex: 1; /* 讓兩個按鈕平均分配寬度 */
+    padding: 12px;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    min-width: 100px;
+  }
+
+  input[type="button"]:active {
+    transform: scale(0.98);
+  }
+  
+  input[type="button"]:disabled {
+    background-color: #ccc !important;
+    cursor: wait;
+  }
+
+  /* 學生查詢按鈕 (藍色) */
+  .btn-student {
+    background-color: #0277bd;
+  }
+  .btn-student:hover { background-color: #01579b; }
+
+  /* 家長查詢按鈕 (綠色，做區隔) */
+  .btn-parent {
+    background-color: #2e7d32;
+  }
+  .btn-parent:hover { background-color: #1b5e20; }
+
+
+  /* 電腦版：讓輸入框和按鈕橫向排列 */
+  @media (min-width: 550px) {
+    .input-group { 
+      flex-direction: row; 
+      align-items: center;
+    }
+    input[type="text"] {
+      flex: 2;
+    }
+    .btn-group {
+      flex: 1.5;
+    }
+  }
+
+  /* ============================
+     結果卡片顯示
+     ============================ */
+  #order_status {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .student-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    overflow: hidden;
+    animation: fadeIn 0.3s ease-in-out;
+    border: 1px solid #ddd;
+  }
+
+  /* 卡片主標題：白色背景、深藍字、灰底線 */
+  .card-header {
+    background: #fff;
+    color: #0277bd;
+    padding: 15px;
+    font-weight: bold;
+    font-size: 1.25em;
+    border-bottom: 2px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+  }
+  
+  .card-body {
+    padding: 15px;
+  }
+
+  /* 單筆資料列：左右並排 */
+  .data-row {
+    display: flex;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+
+  .data-row:last-child {
+    margin-bottom: 0;
+  }
+
+  /* 左側：標題 (Label) - 淡藍色背景 */
+  .data-label {
+    background-color: #e1f5fe;
+    color: #01579b;
+    width: 110px;
+    min-width: 110px;
+    padding: 10px;
+    font-weight: bold;
+    font-size: 0.95em;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    border-right: 1px solid #e0e0e0;
+  }
+
+  /* 右側：數值 (Value) - 白色背景 */
+  .data-value {
+    background-color: #fff;
+    color: #333;
+    padding: 10px;
+    flex: 1;
+    text-align: left;
+    word-break: break-all;
+    display: flex;
+    align-items: center;
+  }
+
+  @media (max-width: 340px) {
+    .data-label { width: 90px; min-width: 90px; font-size: 0.85em; }
+    .data-value { font-size: 0.9em; }
+  }
+
+  .no-data, .error {
+    text-align: center;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    color: #666;
+  }
+  .error { color: #d93025; background: #fce8e6; }
+
+  .spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #0277bd;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+  }
+
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+</style>
+
+<script>
+
+// =========================
+// GAS 部署網址 (請填入)
+// =========================
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwXkHHy97vRpZcH_so__IrV1Moda5uVBn1wJ9s7SbneHviJ6ySQqhFbaYHvBrhJ0jwz/exec";
+
+// =========================
+// 驗證碼處理
+// =========================
+function getAuthCode() {
+  let code = sessionStorage.getItem("authCode");
+  if (!code) {
+    code = prompt("請輸入驗證碼：");
+    if (!code) return null;
+    sessionStorage.setItem("authCode", code);
+  }
+  return code;
+}
+
+// =========================
+// 日期格式化 (強制西元年月日)
+// =========================
+function formatDate(value){
+  if (!value) return "";
+  value = String(value).trim();
+  
+  if (value.includes("T")) {
+    return value.split("T")[0];
+  }
+  
+  const d = new Date(value);
+  if(!isNaN(d) && value.length > 5){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return y + "-" + m + "-" + day;
+  }
+  
+  return value;
+}
+
+// =========================
+// 查詢主程式
+// 參數 searchMode: 'student' | 'parent'
+// =========================
+function doQuery(searchMode){
+
+  const inputEl = document.getElementById("uid");
+  const keyword = inputEl.value.trim();
+  const resultDiv = document.getElementById("order_status");
+  
+  // 收起手機鍵盤
+  inputEl.blur();
+  
+  if(!keyword){
+    alert("請輸入關鍵字");
+    return;
+  }
+
+  // 驗證碼檢查
+  const code = getAuthCode();
+  if(!code) return;
+
+  // 清空輸入框
+  inputEl.value = ""; 
+
+  setLoading(true);
+  resultDiv.innerHTML = '<div class="spinner"></div><div style="text-align:center;color:#666;">查詢中...</div>';
+
+  // 組合 URL，增加 mode 參數
+  const get_url = GAS_URL + 
+                  "?uid=" + encodeURIComponent(keyword) + 
+                  "&code=" + encodeURIComponent(code) + 
+                  "&mode=" + encodeURIComponent(searchMode);
+
+  fetch(get_url)
+  .then(r => r.text())
+  .then(text => {
+    setLoading(false);
+
+    let obj;
+    try { obj = JSON.parse(text); } 
+    catch(e) { resultDiv.innerHTML = '<div class="error">資料解析失敗</div>'; return; }
+
+    if(obj.auth === false){
+      alert(obj.message || "驗證碼錯誤");
+      sessionStorage.removeItem("authCode");
+      resultDiv.innerHTML = "";
+      return;
+    }
+
+    if(obj.ok === false){
+      resultDiv.innerHTML = '<div class="error">' + (obj.message || "查詢發生錯誤") + '</div>';
+      return;
+    }
+
+    if(!Array.isArray(obj) || obj.length <= 1){
+      const typeText = (searchMode === 'parent') ? "家長資料" : "學生資料";
+      resultDiv.innerHTML = '<div class="no-data">查無符合「' + keyword + '」的' + typeText + '</div>';
+      return;
+    }
+
+    // ===== 產生 HTML =====
+    const headers = obj[0].data; 
+    let html = "";
+
+    // 從 i=1 開始 (避開標題列)
+    for(let i = 1; i < obj.length; i++){
+      const rowData = obj[i].data;
+      
+      // 卡牌主標題：使用 A 欄資料 (index 0)
+      const titleData = rowData[0] || ("資料 #" + i);
+
+      html += `
+        <div class="student-card">
+          <div class="card-header">${titleData}</div>
+          <div class="card-body">
+      `;
+
+      // 遍歷所有欄位
+      for(let j = 0; j < rowData.length; j++){
+        
+        // 跳過 A 欄 (index 0)
+        if(j === 0) continue;
+
+        let label = headers[j] || ("欄位" + (j+1));
+        let value = rowData[j];
+
+        // 格式化 G 欄生日 (index 6, A=0, B=1...G=6)
+        if(j === 6) {
+           value = formatDate(value);
+        }
+
+        html += `
+          <div class="data-row">
+            <div class="data-label">${label}</div>
+            <div class="data-value">${value}</div>
+          </div>
+        `;
+      }
+      
+      html += `</div></div>`;
+    }
+
+    resultDiv.innerHTML = html;
+
+  })
+  .catch(err => {
+    setLoading(false);
+    resultDiv.innerHTML = '<div class="error">系統連線失敗：' + err.message + '</div>';
+  });
+}
+
+// UI 狀態控制 (針對兩個按鈕)
+function setLoading(isLoading){
+  var btnS = document.getElementById("btnStudent");
+  var btnP = document.getElementById("btnParent");
+  var input = document.getElementById("uid");
+  
+  btnS.disabled = btnP.disabled = input.disabled = isLoading;
+}
+
+window.addEventListener("DOMContentLoaded", function(){
+  // 綁定 Enter 鍵，預設執行「學生查詢」
+  document.getElementById("uid").addEventListener("keydown", function(e){
+    if(e.key === "Enter") doQuery('student');
+  });
+});
+
+</script>
+</head>
+
+<body>
+
+<div class="container">
+  <h2>學生資料查詢系統</h2>
+
+  <div class="search-card">
+    <div class="input-group">
+      <input type="text" id="uid" placeholder="請輸入關鍵字">
+      
+      <!-- 修改為兩個按鈕 -->
+      <div class="btn-group">
+        <input type="button" id="btnStudent" class="btn-student" value="學生查詢" onclick="doQuery('student')">
+        <input type="button" id="btnParent" class="btn-parent" value="家長查詢" onclick="doQuery('parent')">
+      </div>
+
+    </div>
+  </div>
+
+  <div id="order_status"></div>
+</div>
+
+</body>
+</html>
