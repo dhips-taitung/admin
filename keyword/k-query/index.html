@@ -47,7 +47,7 @@
   }
 
   /* ============================
-     卡片風格 (登入、查詢、修改)
+     卡片風格
      ============================ */
   .card {
     background: white;
@@ -113,7 +113,7 @@
     flex: 1;
   }
 
-  /* 導覽列 (用戶資訊 & 登出) */
+  /* 導覽列 */
   .navbar {
     display: flex;
     justify-content: space-between;
@@ -199,7 +199,6 @@
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   
-  /* 分隔線 */
   hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
 
 </style>
@@ -223,7 +222,7 @@ let currentUser = {
 window.addEventListener("DOMContentLoaded", function(){
   checkLoginStatus();
 
-  // 綁定查詢頁面的 Enter 鍵 (預設學生查詢)
+  // 綁定查詢頁面的 Enter 鍵
   document.getElementById("uid").addEventListener("keydown", function(e){
     if(e.key === "Enter") doQuery('student');
   });
@@ -231,6 +230,11 @@ window.addEventListener("DOMContentLoaded", function(){
   // 綁定登入頁面的 Enter 鍵
   document.getElementById("loginCode").addEventListener("keydown", function(e){
     if(e.key === "Enter") doLogin();
+  });
+  
+  // 綁定修改驗證碼的 Enter 鍵
+  document.getElementById("newAuthCode").addEventListener("keydown", function(e){
+    if(e.key === "Enter") doChangeCode();
   });
 });
 
@@ -292,7 +296,11 @@ function doLogin() {
       currentUser.code = code;
       currentUser.name = res.username;
       
-      codeInput.value = ""; // 清空輸入框
+      codeInput.value = ""; // 清空登入輸入框
+      
+      // 【修改點】登入成功後，確保修改驗證碼的框格是空的
+      document.getElementById("newAuthCode").value = ""; 
+
       checkLoginStatus();
     } else {
       msgBox.innerHTML = '<div class="error">' + res.message + '</div>';
@@ -321,7 +329,8 @@ function doLogout() {
 // 3. 修改驗證碼功能
 // =========================
 function doChangeCode() {
-  const newCode = document.getElementById("newAuthCode").value.trim();
+  const newCodeInput = document.getElementById("newAuthCode");
+  const newCode = newCodeInput.value.trim();
   const oldCode = currentUser.code;
   const msgBox = document.getElementById("changeMsg");
 
@@ -349,7 +358,11 @@ function doChangeCode() {
     
     if (res.ok) {
       alert(res.message);
-      // 修改成功，強制登出
+      
+      // 【修改點】修改成功後，立即清空輸入框
+      newCodeInput.value = ""; 
+      
+      // 強制登出並重整頁面
       sessionStorage.clear();
       location.reload(); 
     } else {
@@ -433,7 +446,7 @@ function renderCards(obj) {
 
   for(let i = 1; i < obj.length; i++){
     const rowData = obj[i].data;
-    const titleData = rowData[0] || ("資料 #" + i); // 標題顯示 A 欄
+    const titleData = rowData[0] || ("資料 #" + i); 
 
     html += `
       <div class="student-card">
@@ -442,12 +455,12 @@ function renderCards(obj) {
     `;
 
     for(let j = 0; j < rowData.length; j++){
-      if(j === 0) continue; // 跳過 A 欄內容
+      if(j === 0) continue; 
 
       let label = headers[j] || ("欄位" + (j+1));
       let value = rowData[j];
 
-      if(j === 6) value = formatDate(value); // G欄生日格式化
+      if(j === 6) value = formatDate(value); 
 
       html += `
         <div class="data-row">
@@ -532,7 +545,8 @@ function setLoading(isLoading){
       <h3 style="margin-top:0; color:#f57c00; font-size:1.2em;">修改驗證碼</h3>
       <div class="input-group">
         <label>輸入新的驗證碼：</label>
-        <input type="text" id="newAuthCode" placeholder="新驗證碼">
+        <!-- 加入 autocomplete="off" 防止瀏覽器自動帶入舊資料 -->
+        <input type="text" id="newAuthCode" placeholder="新驗證碼" autocomplete="off">
       </div>
       <button id="btnChange" class="btn btn-warning" onclick="doChangeCode()">確認修改</button>
       <div id="changeMsg" style="margin-top:10px; color:#d84315;"></div>
