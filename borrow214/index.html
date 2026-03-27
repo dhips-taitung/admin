@@ -2,195 +2,246 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>東海國小資訊器材借用系統</title>
     <style>
-        :root { --p: #2c3e50; --a: #3498db; --s: #27ae60; --r: #e74c3c; }
-        body { font-family: sans-serif; background: #f4f7f6; margin: 0; padding: 20px; color: #333; }
-        .box { max-width: 900px; margin: auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #ddd; }
-        .tab { padding: 12px 25px; cursor: pointer; transition: 0.3s; }
-        .tab.active { background: var(--a); color: white; font-weight: bold; border-radius: 5px 5px 0 0; }
-        .page { display: none; animation: fadeIn 0.4s; }
-        .page.active { display: block; }
-        .g { margin-bottom: 15px; }
+        body { font-family: sans-serif; margin: 20px; background: #f4f7f6; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; cursor: pointer; background: #eee; margin-right: 5px; border-radius: 5px 5px 0 0; }
+        .tab.active { background: #3498db; color: white; }
+        .content { display: none; }
+        .content.active { display: block; }
+        .form-item { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { background: var(--a); color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; }
-        button:hover { opacity: 0.9; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+        input, select, textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #2980b9; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
         th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
         th { background: #f8f9fa; }
-        .btn-s { width: auto; padding: 6px 12px; font-size: 12px; margin-right: 5px; cursor: pointer; border-radius: 3px; border: none; color: #fff; }
-        #auth-panel { text-align: center; padding: 40px 0; }
-        .star { color: var(--r); font-weight: bold; font-size: 16px; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .stock-info { color: #e67e22; font-weight: bold; margin-top: 5px; }
+        #admin-auth { text-align: center; padding: 50px 0; }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <h2 style="text-align:center; color: var(--p);">東海國小資訊器材借用系統</h2>
+<div class="container">
+    <h2 style="text-align:center;">東海國小資訊器材借用系統</h2>
 
-    <!-- 信箱驗證 -->
-    <div id="v-sec">
-        <div class="g">
-            <label>請輸入學校 G-mail 驗證 (@dhips.ttct.edu.tw)：</label>
-            <input type="email" id="email" placeholder="example@dhips.ttct.edu.tw">
-            <button onclick="login()" style="margin-top:10px">進入系統</button>
-        </div>
+    <!-- 登入驗證區 -->
+    <div id="login-section">
+        <label>請輸入學校信箱驗證：</label>
+        <input type="email" id="userEmail" placeholder="example@dhips.ttct.edu.tw">
+        <button onclick="verifyUser()" style="margin-top:10px; width:100%;">進入系統</button>
     </div>
 
-    <!-- 主介面 -->
-    <div id="m-sec" style="display:none;">
+    <!-- 主功能區 -->
+    <div id="main-section" style="display:none;">
         <div class="tabs">
-            <div id="t1" class="tab active" onclick="tab('p1', 't1')">借用填表</div>
-            <div id="t2" class="tab" onclick="tab('p2', 't2')">管理分頁</div>
+            <div class="tab active" id="tab1" onclick="switchTab('borrow')">借用填表</div>
+            <div class="tab" id="tab2" onclick="switchTab('manage')">管理分頁</div>
         </div>
 
-        <!-- 填表分頁 -->
-        <div id="p1" class="page active">
-            <form id="f1">
-                <div class="g"><label>填表人：</label><input type="text" id="u-name" disabled></div>
-                <div style="display:flex; gap:10px;">
-                    <div class="g" style="flex:1"><label>借用日期：</label><input type="date" id="b-date" required></div>
-                    <div class="g" style="flex:1"><label>預計歸還日：</label><input type="date" id="r-date" required></div>
+        <!-- 借用填表 -->
+        <div id="borrow-page" class="content active">
+            <form id="borrowForm">
+                <div class="form-item">
+                    <label>填表人：</label>
+                    <input type="text" id="userNameDisplay" disabled>
                 </div>
-                <div class="g"><label>借用器材：</label><select id="e-list" onchange="sid()" required></select></div>
-                <div class="g"><label>器材編號：</label><input type="text" id="e-id" disabled></div>
-                <div class="g"><label>借用數量：</label><input type="number" id="qty" value="1" min="1" required></div>
-                <div class="g"><label>借用原因 (選填)：</label><textarea id="res" rows="2"></textarea></div>
-                <button type="submit" id="sub">送出借用申請</button>
+                <div class="form-item">
+                    <label>借用日期：</label>
+                    <input type="date" id="borrowDate" required>
+                </div>
+                <div class="form-item">
+                    <label>預計歸還日：</label>
+                    <input type="date" id="returnDate" required>
+                </div>
+                <div class="form-item">
+                    <label>借用器材：</label>
+                    <select id="equipSelect" onchange="onEquipChange()" required></select>
+                    <div id="stockDisplay" class="stock-info"></div>
+                </div>
+                <div class="form-item">
+                    <label>器材編號：</label>
+                    <input type="text" id="equipId" disabled>
+                </div>
+                <div class="form-item">
+                    <label>借用數量：</label>
+                    <input type="number" id="quantity" value="1" min="1" required>
+                </div>
+                <div class="form-item">
+                    <label>借用原因：</label>
+                    <textarea id="reason" rows="2"></textarea>
+                </div>
+                <button type="submit" id="submitBtn" style="width:100%;">送出申請</button>
             </form>
         </div>
 
-        <!-- 管理分頁 -->
-        <div id="p2" class="page">
-            <div id="auth-panel">
-                <h4>管理者登入驗證</h4>
-                <input type="password" id="pcode" placeholder="請輸入管理密碼" style="width:200px">
-                <button onclick="vAdmin()" style="width:80px; margin-left:10px">登入</button>
+        <!-- 管理驗證 -->
+        <div id="admin-auth" class="content">
+            <h3>管理者驗證</h3>
+            <input type="password" id="adminPass" placeholder="請輸入驗證碼" style="width:200px;">
+            <button onclick="verifyAdmin()">登入管理</button>
+        </div>
+
+        <!-- 管理內容 -->
+        <div id="manage-page" class="content">
+            <div style="display:flex; justify-content: space-between; align-items: center;">
+                <h4>借用記錄管理</h4>
+                <button onclick="logoutAdmin()" style="background:#95a5a6;">登出管理</button>
             </div>
-            <div id="admin-panel" style="display:none;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                    <b>管理清單</b>
-                    <button onclick="logout()" style="width:80px; background:var(--r)">登出</button>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table>
-                        <thead><tr><th>姓名</th><th>器材</th><th>歸還日</th><th>情形</th><th>逾期</th><th>操作</th></tr></thead>
-                        <tbody id="rtbody"></tbody>
-                    </table>
-                </div>
-            </div>
+            <table id="manageTable">
+                <thead>
+                    <tr>
+                        <th>申請人</th><th>器材</th><th>數量</th><th>歸還日</th><th>狀態</th><th>逾期</th><th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="manageBody"></tbody>
+            </table>
         </div>
     </div>
 </div>
 
 <script>
-    const G_URL = "https://script.google.com/macros/s/AKfycbzisQztHoZPWULdZrOa-NtwFflg0yj5JYFJm20LAa1pi1eQaosDY4lLdaB683m2rESKDw/exec"; // <-- 替換為部署後的網址
-    let u_obj = null, e_data = [];
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzisQztHoZPWULdZrOa-NtwFflg0yj5JYFJm20LAa1pi1eQaosDY4lLdaB683m2rESKDw/exec"; 
+    let currentUser = {};
+    let equipData = [];
+    let isAdmin = false;
 
-    async function api(a, p = {}) {
-        const r = await fetch(G_URL, { method: 'POST', body: JSON.stringify({ action: a, ...p }) });
-        return await r.json();
+    async function verifyUser() {
+        const email = document.getElementById('userEmail').value;
+        const res = await api('checkUser', { email });
+        if (res.success) {
+            currentUser = res.data;
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('main-section').style.display = 'block';
+            document.getElementById('userNameDisplay').value = currentUser.name;
+            loadEquips();
+        } else { alert(res.msg); }
     }
 
-    async function login() {
-        const m = document.getElementById('email').value;
-        const res = await api('checkUser', { email: m });
-        if(res.success) {
-            u_obj = res.data;
-            document.getElementById('v-sec').style.display = 'none';
-            document.getElementById('m-sec').style.display = 'block';
-            document.getElementById('u-name').value = u_obj.name;
-            const elist = await api('getInitialData');
-            if(elist.success) {
-                e_data = elist.data;
-                const sel = document.getElementById('e-list');
-                sel.innerHTML = '<option value="">請選擇器材</option>';
-                e_data.forEach(x => sel.innerHTML += `<option value="${x.name}">${x.name}</option>`);
-            }
-        } else alert(res.msg);
-    }
-
-    function sid() {
-        const item = e_data.find(x => x.name === document.getElementById('e-list').value);
-        document.getElementById('e-id').value = item ? item.id : "";
-    }
-
-    document.getElementById('f1').onsubmit = async (e) => {
-        e.preventDefault();
-        const b = document.getElementById('sub');
-        b.disabled = true;
-        const d = {
-            userName: u_obj.name,
-            borrowDate: document.getElementById('b-date').value,
-            returnDate: document.getElementById('r-date').value,
-            equipName: document.getElementById('e-list').value,
-            equipId: document.getElementById('e-id').value,
-            quantity: document.getElementById('qty').value,
-            reason: document.getElementById('res').value
-        };
-        const res = await api('submitForm', { data: d });
-        alert(res.msg);
-        b.disabled = false;
-        if(res.success) document.getElementById('f1').reset();
-    };
-
-    async function vAdmin() {
-        const c = document.getElementById('pcode').value;
-        const res = await api('adminAuth', { code: c });
-        if(res.success) {
-            document.getElementById('auth-panel').style.display = 'none';
-            document.getElementById('admin-panel').style.display = 'block';
-            loadR();
-        } else alert(res.msg);
-    }
-
-    async function loadR() {
-        const res = await api('getRecords');
-        const tb = document.getElementById('rtbody');
-        tb.innerHTML = "";
-        if(res.success) {
-            res.data.reverse().forEach((r, i) => {
-                const idx = res.data.length - 1 - i;
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${r[1]}</td><td>${r[4]}</td><td>${fmtD(r[3])}</td>
-                    <td>${r[8] || '<small style="color:#999">未領</small>'}</td>
-                    <td class="star">${r[9]||''}</td>
-                    <td>
-                        <button class="btn-s" style="background:var(--a)" onclick="upd(${idx},'已領')">已領</button>
-                        <button class="btn-s" style="background:var(--s)" onclick="upd(${idx},'已歸還')">歸還</button>
-                    </td>`;
-                tb.appendChild(tr);
+    async function loadEquips() {
+        const res = await api('getInitialData');
+        if (res.success) {
+            equipData = res.data;
+            const select = document.getElementById('equipSelect');
+            select.innerHTML = '<option value="">-- 請選擇器材 --</option>';
+            equipData.forEach(item => {
+                select.innerHTML += `<option value="${item.name}">${item.name}</option>`;
             });
         }
     }
 
-    async function upd(i, s) {
-        const res = await api('updateStatus', { row: i, status: s });
-        if(res.success) loadR();
+    function onEquipChange() {
+        const name = document.getElementById('equipSelect').value;
+        const item = equipData.find(i => i.name === name);
+        if (item) {
+            document.getElementById('equipId').value = item.id;
+            document.getElementById('stockDisplay').innerText = `目前剩餘存貨量：${item.stock}`;
+            document.getElementById('quantity').max = item.stock;
+        } else {
+            document.getElementById('equipId').value = "";
+            document.getElementById('stockDisplay').innerText = "";
+        }
     }
 
-    function logout() {
-        document.getElementById('auth-panel').style.display = 'block';
-        document.getElementById('admin-panel').style.display = 'none';
-        document.getElementById('pcode').value = "";
+    async function verifyAdmin() {
+        const pass = document.getElementById('adminPass').value;
+        const res = await api('adminLogin', { password: pass });
+        if (res.success) {
+            isAdmin = true;
+            document.getElementById('admin-auth').classList.remove('active');
+            document.getElementById('manage-page').classList.add('active');
+            loadRecords();
+        } else { alert(res.msg); }
     }
 
-    function tab(p, t) {
-        document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
-        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-        document.getElementById(p).classList.add('active');
-        document.getElementById(t).classList.add('active');
+    function logoutAdmin() {
+        isAdmin = false;
+        document.getElementById('adminPass').value = "";
+        switchTab('manage');
     }
 
-    function fmtD(s) {
-        if(!s) return "";
-        const d = new Date(s);
-        return `${d.getMonth()+1}/${d.getDate()}`;
+    async function loadRecords() {
+        const res = await api('getRecords');
+        const tbody = document.getElementById('manageBody');
+        tbody.innerHTML = "";
+        if (res.success) {
+            res.data.reverse().forEach((row, idx) => {
+                const realIdx = res.data.length - 1 - idx;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row[1]}</td>
+                    <td>${row[4]}</td>
+                    <td>${row[5]}</td>
+                    <td>${new Date(row[3]).toLocaleDateString()}</td>
+                    <td>${row[8] || '<span style="color:gray;">待處理</span>'}</td>
+                    <td style="color:red;">${row[9] || ''}</td>
+                    <td>
+                        <button onclick="updateStat(${realIdx}, '已領')" style="background:#f39c12; padding:5px 10px;">已領</button>
+                        <button onclick="updateStat(${realIdx}, '已歸還')" style="background:#27ae60; padding:5px 10px;">歸還</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    }
+
+    async function updateStat(idx, stat) {
+        const res = await api('updateStatus', { row: idx, status: stat });
+        if (res.success) loadRecords();
+    }
+
+    document.getElementById('borrowForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const qty = parseInt(document.getElementById('quantity').value);
+        const name = document.getElementById('equipSelect').value;
+        const item = equipData.find(i => i.name === name);
+        
+        if (qty > item.stock) return alert("借用數量超過剩餘存貨！");
+
+        document.getElementById('submitBtn').disabled = true;
+        const data = {
+            userName: currentUser.name,
+            borrowDate: document.getElementById('borrowDate').value,
+            returnDate: document.getElementById('returnDate').value,
+            equipName: name,
+            equipId: document.getElementById('equipId').value,
+            quantity: qty,
+            reason: document.getElementById('reason').value
+        };
+        const res = await api('submitForm', { data });
+        alert(res.msg);
+        document.getElementById('submitBtn').disabled = false;
+        if (res.success) {
+            document.getElementById('borrowForm').reset();
+            document.getElementById('stockDisplay').innerText = "";
+            loadEquips();
+        }
+    };
+
+    function switchTab(type) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+        if (type === 'borrow') {
+            document.getElementById('tab1').classList.add('active');
+            document.getElementById('borrow-page').classList.add('active');
+        } else {
+            document.getElementById('tab2').classList.add('active');
+            if (isAdmin) {
+                document.getElementById('manage-page').classList.add('active');
+                loadRecords();
+            } else {
+                document.getElementById('admin-auth').classList.add('active');
+            }
+        }
+    }
+
+    async function api(action, data = {}) {
+        const body = JSON.stringify({ action, ...data });
+        const res = await fetch(GAS_URL, { method: 'POST', body });
+        return await res.json();
     }
 </script>
 
