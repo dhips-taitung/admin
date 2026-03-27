@@ -15,15 +15,15 @@
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 8px; font-weight: bold; color: #34495e; }
         input, select, textarea { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; }
-        button { background: #3498db; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; transition: 0.3s; }
+        button { background: #3498db; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; transition: 0.3s; margin-top: 5px; }
         button:hover { background: #2980b9; }
-        button:disabled { background: #bdc3c7; }
-        .btn-secondary { background: #7f8c8d; margin-top: 10px; }
+        button:disabled { background: #bdc3c7; cursor: not-allowed; }
+        .btn-secondary { background: #7f8c8d; }
         .btn-secondary:hover { background: #95a5a6; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; color: #2c3e50; }
-        .stock-tag { color: #d35400; font-weight: bold; margin-top: 5px; }
+        .stock-tag { color: #d35400; font-weight: bold; margin-top: 5px; height: 20px; }
         .overdue-text { color: red; font-weight: bold; }
         #loading { display:none; text-align:center; color: #3498db; font-weight: bold; padding: 10px; }
     </style>
@@ -33,12 +33,12 @@
 <div class="container">
     <h2 style="text-align:center; color:#2c3e50;">東海國小資訊器材借用申請系統</h2>
 
-    <!-- 申請首頁 (信箱驗證區) -->
+    <!-- 申請首頁 -->
     <div id="login-section">
         <div class="form-group">
             <label>請輸入學校信箱 (@dhips.ttct.edu.tw)：</label>
             <input type="email" id="userEmail" placeholder="example@dhips.ttct.edu.tw">
-            <button onclick="verifyUser()" style="margin-top:15px;">登入驗證</button>
+            <button onclick="verifyUser()">登入驗證</button>
             <button onclick="goToManageFromHome()" class="btn-secondary">前往管理分頁</button>
         </div>
     </div>
@@ -91,7 +91,7 @@
             </form>
         </div>
 
-        <!-- 管理登入驗證 -->
+        <!-- 管理員驗證 -->
         <div id="admin-auth" class="content" style="text-align:center; padding: 40px 0;">
             <h3>管理者權限驗證</h3>
             <input type="password" id="adminPass" placeholder="輸入驗證碼" style="width:250px; margin-bottom:15px;">
@@ -101,13 +101,13 @@
             <button onclick="backToHome()" class="btn-secondary" style="width:250px;">回申請首頁</button>
         </div>
 
-        <!-- 管理清單分頁 -->
+        <!-- 管理清單 -->
         <div id="manage-page" class="content">
             <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom:10px;">
                 <h4 style="margin:0;">器材借用清單</h4>
                 <div>
-                    <button onclick="backToHome()" style="background:#7f8c8d; width:auto; padding: 5px 15px;">回首頁</button>
-                    <button onclick="logoutAdmin()" style="background:#e67e22; width:auto; padding: 5px 15px;">登出管理</button>
+                    <button onclick="backToHome()" style="background:#7f8c8d; width:auto; padding: 5px 15px; font-size:12px;">回首頁</button>
+                    <button onclick="logoutAdmin()" style="background:#e67e22; width:auto; padding: 5px 15px; font-size:12px;">登出管理</button>
                 </div>
             </div>
             <div style="overflow-x: auto;">
@@ -125,11 +125,12 @@
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzOqV9t5VmfGUZQCh9-eRsrmRSCpojT0zgedwqPuSE-vtkkunfY2Uimcve7zRla8T7B/exec"; // <-- 這裡替換成部署網址
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzOqV9t5VmfGUZQCh9-eRsrmRSCpojT0zgedwqPuSE-vtkkunfY2Uimcve7zRla8T7B/exec"; 
     let currentUser = {};
     let equipData = [];
     let isAdmin = false;
 
+    // 返回首頁功能
     function backToHome() {
         document.getElementById('main-section').style.display = 'none';
         document.getElementById('login-section').style.display = 'block';
@@ -137,6 +138,7 @@
         document.getElementById('adminPass').value = "";
         document.getElementById('borrowForm').reset();
         document.getElementById('stockDisplay').innerText = "";
+        document.getElementById('submitBtn').disabled = false;
         isAdmin = false;
         currentUser = {};
     }
@@ -147,6 +149,7 @@
         switchTab('manage');
     }
 
+    // 驗證使用者信箱
     async function verifyUser() {
         const email = document.getElementById('userEmail').value.trim();
         if(!email) return alert("請輸入信箱");
@@ -163,6 +166,7 @@
         } else { alert(res.msg); }
     }
 
+    // 載入器材與庫存
     async function loadEquips() {
         const res = await api('getInitialData');
         if (res.success) {
@@ -188,6 +192,49 @@
         }
     }
 
+    // 提交申請
+    document.getElementById('borrowForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const submitBtn = document.getElementById('submitBtn');
+        const qtyInput = document.getElementById('quantity');
+        const qty = parseInt(qtyInput.value);
+        const name = document.getElementById('equipSelect').value;
+        
+        if (!name) return alert("請選擇器材");
+        
+        const item = equipData.find(i => i.name === name);
+        if (item && qty > item.stock) return alert("借用數量(" + qty + ")已超過現有存貨(" + item.stock + ")！");
+
+        submitBtn.disabled = true;
+        showLoading(true);
+
+        try {
+            const data = {
+                userName: currentUser.name,
+                borrowDate: document.getElementById('borrowDate').value,
+                returnDate: document.getElementById('returnDate').value,
+                equipName: name,
+                equipId: document.getElementById('equipId').value,
+                quantity: qty,
+                reason: document.getElementById('reason').value
+            };
+            const res = await api('submitForm', { data });
+            if (res.success) {
+                alert(res.msg);
+                backToHome(); 
+            } else {
+                alert("送出失敗：" + res.msg);
+                submitBtn.disabled = false;
+            }
+        } catch (err) {
+            alert("提交發生程式錯誤，請聯絡管理員。");
+            submitBtn.disabled = false;
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    // 管理員登入
     async function verifyAdmin() {
         const pass = document.getElementById('adminPass').value;
         showLoading(true);
@@ -226,8 +273,8 @@
                     <td>${row[8] || '<span style="color:#95a5a6;">待處理</span>'}</td>
                     <td>${overdueDisplay}</td>
                     <td>
-                        <button onclick="updateStat(${realIdx}, '已領')" style="background:#f39c12; padding:5px; margin-bottom:5px; font-size:12px; width:auto;">已領</button>
-                        <button onclick="updateStat(${realIdx}, '已歸還')" style="background:#27ae60; padding:5px; font-size:12px; width:auto;">歸還</button>
+                        <button onclick="updateStat(${realIdx}, '已領')" style="background:#f39c12; padding:5px; margin-bottom:5px; font-size:11px; width:auto;">已領</button>
+                        <button onclick="updateStat(${realIdx}, '已歸還')" style="background:#27ae60; padding:5px; font-size:11px; width:auto;">歸還</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -242,34 +289,6 @@
         if (res.success) loadRecords();
     }
 
-    document.getElementById('borrowForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const qty = parseInt(document.getElementById('quantity').value);
-        const name = document.getElementById('equipSelect').value;
-        const item = equipData.find(i => i.name === name);
-        if (qty > item.stock) return alert("借用數量已超過存貨！");
-        document.getElementById('submitBtn').disabled = true;
-        showLoading(true);
-        const data = {
-            userName: currentUser.name,
-            borrowDate: document.getElementById('borrowDate').value,
-            returnDate: document.getElementById('returnDate').value,
-            equipName: name,
-            equipId: document.getElementById('equipId').value,
-            quantity: qty,
-            reason: document.getElementById('reason').value
-        };
-        const res = await api('submitForm', { data });
-        showLoading(false);
-        if (res.success) {
-            alert(res.msg);
-            backToHome(); 
-        } else {
-            alert(res.msg);
-            document.getElementById('submitBtn').disabled = false;
-        }
-    };
-
     function switchTab(type) {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
@@ -280,7 +299,6 @@
             document.getElementById('tab2').classList.add('active');
             if (isAdmin) {
                 document.getElementById('manage-page').classList.add('active');
-                loadRecords();
             } else {
                 document.getElementById('admin-auth').classList.add('active');
             }
@@ -293,7 +311,7 @@
             const res = await fetch(GAS_URL, { method: 'POST', body });
             return await res.json();
         } catch(e) {
-            return { success: false, msg: "連線失敗，請檢查 GAS 部署" };
+            return { success: false, msg: "連線失敗，請檢查網路或 GAS 部署網址。" };
         }
     }
 
