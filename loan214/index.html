@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>東海國小資訊器材借用系統</title>
+    <style>
+        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; margin: 20px; background: #f0f2f5; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
+        .tab { padding: 12px 25px; cursor: pointer; background: #eee; margin-right: 5px; border-radius: 8px 8px 0 0; transition: 0.3s; }
+        .tab.active { background: #3498db; color: white; font-weight: bold; }
+        .content { display: none; }
+        .content.active { display: block; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #34495e; }
+        input, select, textarea { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; }
+        button { background: #3498db; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; transition: 0.3s; }
+        button:hover { background: #2980b9; }
+        button:disabled { background: #bdc3c7; }
+        .btn-secondary { background: #7f8c8d; margin-top: 10px; }
+        .btn-secondary:hover { background: #95a5a6; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; color: #2c3e50; }
+        .stock-tag { color: #d35400; font-weight: bold; margin-top: 5px; }
+        .overdue-text { color: red; font-weight: bold; }
+        #loading { display:none; text-align:center; color: #3498db; font-weight: bold; padding: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 style="text-align:center; color:#2c3e50;">東海國小資訊器材借用申請系統</h2>
+
+    <!-- 申請首頁 (信箱驗證區) -->
+    <div id="login-section">
+        <div class="form-group">
+            <label>請輸入學校信箱 (@dhips.ttct.edu.tw)：</label>
+            <input type="email" id="userEmail" placeholder="example@dhips.ttct.edu.tw">
+            <button onclick="verifyUser()" style="margin-top:15px;">登入驗證</button>
+            <button onclick="goToManageFromHome()" class="btn-secondary">前往管理分頁</button>
+        </div>
+    </div>
+
+    <!-- 主功能區 -->
+    <div id="main-section" style="display:none;">
+        <div class="tabs">
+            <div class="tab active" id="tab1" onclick="switchTab('borrow')">借用填表</div>
+            <div id="tab2" class="tab" onclick="switchTab('manage')">管理分頁</div>
+        </div>
+
+        <div id="loading">連線中，請稍候...</div>
+
+        <!-- 借用填表分頁 -->
+        <div id="borrow-page" class="content active">
+            <form id="borrowForm">
+                <div class="form-group">
+                    <label>填表人：</label>
+                    <input type="text" id="userNameDisplay" disabled style="background:#f8f9fa;">
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <div class="form-group" style="flex:1;">
+                        <label>借用日期：</label>
+                        <input type="date" id="borrowDate" required>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>預計歸還日：</label>
+                        <input type="date" id="returnDate" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>借用器材：</label>
+                    <select id="equipSelect" onchange="onEquipChange()" required></select>
+                    <div id="stockDisplay" class="stock-tag"></div>
+                </div>
+                <div class="form-group">
+                    <label>器材編號：</label>
+                    <input type="text" id="equipId" disabled style="background:#f8f9fa;">
+                </div>
+                <div class="form-group">
+                    <label>借用數量：</label>
+                    <input type="number" id="quantity" value="1" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label>借用原因：</label>
+                    <textarea id="reason" rows="2" placeholder="選填"></textarea>
+                </div>
+                <button type="submit" id="submitBtn">送出借用申請</button>
+                <button type="button" onclick="backToHome()" class="btn-secondary">回申請首頁</button>
+            </form>
+        </div>
+
+        <!-- 管理登入驗證 -->
+        <div id="admin-auth" class="content" style="text-align:center; padding: 40px 0;">
+            <h3>管理者權限驗證</h3>
+            <input type="password" id="adminPass" placeholder="輸入驗證碼" style="width:250px; margin-bottom:15px;">
+            <br>
+            <button onclick="verifyAdmin()" style="width:250px;">進入管理模式</button>
+            <br>
+            <button onclick="backToHome()" class="btn-secondary" style="width:250px;">回申請首頁</button>
+        </div>
+
+        <!-- 管理清單分頁 -->
+        <div id="manage-page" class="content">
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom:10px;">
+                <h4 style="margin:0;">器材借用清單</h4>
+                <div>
+                    <button onclick="backToHome()" style="background:#7f8c8d; width:auto; padding: 5px 15px;">回首頁</button>
+                    <button onclick="logoutAdmin()" style="background:#e67e22; width:auto; padding: 5px 15px;">登出管理</button>
+                </div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table id="manageTable">
+                    <thead>
+                        <tr>
+                            <th>姓名</th><th>器材</th><th>數量</th><th>預計歸還</th><th>狀態</th><th>逾期</th><th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="manageBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzOqV9t5VmfGUZQCh9-eRsrmRSCpojT0zgedwqPuSE-vtkkunfY2Uimcve7zRla8T7B/exec"; // <-- 這裡替換成部署網址
+    let currentUser = {};
+    let equipData = [];
+    let isAdmin = false;
+
+    function backToHome() {
+        document.getElementById('main-section').style.display = 'none';
+        document.getElementById('login-section').style.display = 'block';
+        document.getElementById('userEmail').value = "";
+        document.getElementById('adminPass').value = "";
+        document.getElementById('borrowForm').reset();
+        document.getElementById('stockDisplay').innerText = "";
+        isAdmin = false;
+        currentUser = {};
+    }
+
+    function goToManageFromHome() {
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('main-section').style.display = 'block';
+        switchTab('manage');
+    }
+
+    async function verifyUser() {
+        const email = document.getElementById('userEmail').value.trim();
+        if(!email) return alert("請輸入信箱");
+        showLoading(true);
+        const res = await api('checkUser', { email });
+        showLoading(false);
+        if (res.success) {
+            currentUser = res.data;
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('main-section').style.display = 'block';
+            document.getElementById('userNameDisplay').value = currentUser.name;
+            switchTab('borrow');
+            loadEquips();
+        } else { alert(res.msg); }
+    }
+
+    async function loadEquips() {
+        const res = await api('getInitialData');
+        if (res.success) {
+            equipData = res.data;
+            const select = document.getElementById('equipSelect');
+            select.innerHTML = '<option value="">-- 選擇借用器材 --</option>';
+            equipData.forEach(item => {
+                select.innerHTML += `<option value="${item.name}">${item.name}</option>`;
+            });
+        }
+    }
+
+    function onEquipChange() {
+        const name = document.getElementById('equipSelect').value;
+        const item = equipData.find(i => i.name === name);
+        if (item) {
+            document.getElementById('equipId').value = item.id;
+            document.getElementById('stockDisplay').innerText = `目前剩餘存貨：${item.stock}`;
+            document.getElementById('quantity').max = item.stock;
+        } else {
+            document.getElementById('equipId').value = "";
+            document.getElementById('stockDisplay').innerText = "";
+        }
+    }
+
+    async function verifyAdmin() {
+        const pass = document.getElementById('adminPass').value;
+        showLoading(true);
+        const res = await api('adminLogin', { password: pass });
+        showLoading(false);
+        if (res.success) {
+            isAdmin = true;
+            document.getElementById('admin-auth').classList.remove('active');
+            document.getElementById('manage-page').classList.add('active');
+            loadRecords();
+        } else { alert(res.msg); }
+    }
+
+    function logoutAdmin() {
+        isAdmin = false;
+        document.getElementById('adminPass').value = "";
+        switchTab('manage');
+    }
+
+    async function loadRecords() {
+        showLoading(true);
+        const res = await api('getRecords');
+        showLoading(false);
+        const tbody = document.getElementById('manageBody');
+        tbody.innerHTML = "";
+        if (res.success) {
+            res.data.reverse().forEach((row, idx) => {
+                const realIdx = res.data.length - 1 - idx;
+                const tr = document.createElement('tr');
+                const overdueDisplay = row[9] === "★" ? '<span class="overdue-text">已逾期</span>' : "";
+                tr.innerHTML = `
+                    <td>${row[1]}</td>
+                    <td>${row[4]}</td>
+                    <td>${row[5]}</td>
+                    <td>${new Date(row[3]).toLocaleDateString()}</td>
+                    <td>${row[8] || '<span style="color:#95a5a6;">待處理</span>'}</td>
+                    <td>${overdueDisplay}</td>
+                    <td>
+                        <button onclick="updateStat(${realIdx}, '已領')" style="background:#f39c12; padding:5px; margin-bottom:5px; font-size:12px; width:auto;">已領</button>
+                        <button onclick="updateStat(${realIdx}, '已歸還')" style="background:#27ae60; padding:5px; font-size:12px; width:auto;">歸還</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    }
+
+    async function updateStat(idx, stat) {
+        showLoading(true);
+        const res = await api('updateStatus', { row: idx, status: stat });
+        showLoading(false);
+        if (res.success) loadRecords();
+    }
+
+    document.getElementById('borrowForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const qty = parseInt(document.getElementById('quantity').value);
+        const name = document.getElementById('equipSelect').value;
+        const item = equipData.find(i => i.name === name);
+        if (qty > item.stock) return alert("借用數量已超過存貨！");
+        document.getElementById('submitBtn').disabled = true;
+        showLoading(true);
+        const data = {
+            userName: currentUser.name,
+            borrowDate: document.getElementById('borrowDate').value,
+            returnDate: document.getElementById('returnDate').value,
+            equipName: name,
+            equipId: document.getElementById('equipId').value,
+            quantity: qty,
+            reason: document.getElementById('reason').value
+        };
+        const res = await api('submitForm', { data });
+        showLoading(false);
+        if (res.success) {
+            alert(res.msg);
+            backToHome(); 
+        } else {
+            alert(res.msg);
+            document.getElementById('submitBtn').disabled = false;
+        }
+    };
+
+    function switchTab(type) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+        if (type === 'borrow') {
+            document.getElementById('tab1').classList.add('active');
+            document.getElementById('borrow-page').classList.add('active');
+        } else {
+            document.getElementById('tab2').classList.add('active');
+            if (isAdmin) {
+                document.getElementById('manage-page').classList.add('active');
+                loadRecords();
+            } else {
+                document.getElementById('admin-auth').classList.add('active');
+            }
+        }
+    }
+
+    async function api(action, data = {}) {
+        const body = JSON.stringify({ action, ...data });
+        try {
+            const res = await fetch(GAS_URL, { method: 'POST', body });
+            return await res.json();
+        } catch(e) {
+            return { success: false, msg: "連線失敗，請檢查 GAS 部署" };
+        }
+    }
+
+    function showLoading(show) {
+        document.getElementById('loading').style.display = show ? 'block' : 'none';
+    }
+</script>
+
+</body>
+</html>
