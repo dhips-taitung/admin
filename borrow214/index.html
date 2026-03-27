@@ -15,10 +15,11 @@
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 8px; font-weight: bold; color: #34495e; }
         input, select, textarea { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; }
-        button { background: #3498db; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; }
+        button { background: #3498db; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; transition: 0.3s; }
         button:hover { background: #2980b9; }
         button:disabled { background: #bdc3c7; }
         .btn-secondary { background: #7f8c8d; margin-top: 10px; }
+        .btn-secondary:hover { background: #95a5a6; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; color: #2c3e50; }
@@ -32,7 +33,7 @@
 <div class="container">
     <h2 style="text-align:center; color:#2c3e50;">東海國小資訊器材借用申請系統</h2>
 
-    <!-- 信箱驗證區 (申請首頁) -->
+    <!-- 申請首頁 (信箱驗證區) -->
     <div id="login-section">
         <div class="form-group">
             <label>請輸入學校信箱 (@dhips.ttct.edu.tw)：</label>
@@ -86,6 +87,8 @@
                     <textarea id="reason" rows="2" placeholder="選填"></textarea>
                 </div>
                 <button type="submit" id="submitBtn">送出借用申請</button>
+                <!-- 修改 1: 增加回申請首頁按鈕 -->
+                <button type="button" onclick="backToHome()" class="btn-secondary">回申請首頁</button>
             </form>
         </div>
 
@@ -128,12 +131,14 @@
     let equipData = [];
     let isAdmin = false;
 
-    // 回到初始首頁
+    // 回到初始首頁 (重置狀態)
     function backToHome() {
         document.getElementById('main-section').style.display = 'none';
         document.getElementById('login-section').style.display = 'block';
         document.getElementById('userEmail').value = "";
         document.getElementById('adminPass').value = "";
+        document.getElementById('borrowForm').reset();
+        document.getElementById('stockDisplay').innerText = "";
         isAdmin = false;
         currentUser = {};
     }
@@ -146,7 +151,7 @@
     }
 
     async function verifyUser() {
-        const email = document.getElementById('userEmail').value;
+        const email = document.getElementById('userEmail').value.trim();
         if(!email) return alert("請輸入信箱");
         showLoading(true);
         const res = await api('checkUser', { email });
@@ -215,10 +220,7 @@
             res.data.reverse().forEach((row, idx) => {
                 const realIdx = res.data.length - 1 - idx;
                 const tr = document.createElement('tr');
-                
-                // 處理逾期文字顯示
                 const overdueDisplay = row[9] === "★" ? '<span class="overdue-text">已逾期</span>' : "";
-
                 tr.innerHTML = `
                     <td>${row[1]}</td>
                     <td>${row[4]}</td>
@@ -267,12 +269,12 @@
         
         if (res.success) {
             alert(res.msg);
-            document.getElementById('borrowForm').reset();
+            // 修改 2: 送出成功後自動返回首頁
             backToHome(); 
         } else {
             alert(res.msg);
+            document.getElementById('submitBtn').disabled = false;
         }
-        document.getElementById('submitBtn').disabled = false;
     };
 
     function switchTab(type) {
@@ -298,7 +300,7 @@
             const res = await fetch(GAS_URL, { method: 'POST', body });
             return await res.json();
         } catch(e) {
-            return { success: false, msg: "連線失敗，請檢查網路或 GAS 部署" };
+            return { success: false, msg: "連線失敗，請檢查 GAS 部署" };
         }
     }
 
