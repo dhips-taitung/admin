@@ -19,12 +19,12 @@
         button:hover { background: #2980b9; }
         button:disabled { background: #bdc3c7; }
         .btn-secondary { background: #7f8c8d; margin-top: 10px; }
-        .btn-secondary:hover { background: #95a5a6; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background: #f8f9fa; color: #2c3e50; }
-        .stock-tag { color: #d35400; font-weight: bold; font-size: 14px; margin-top: 5px; }
-        #loading { display:none; text-align:center; color: #3498db; font-weight: bold; margin-top: 10px; }
+        .stock-tag { color: #d35400; font-weight: bold; margin-top: 5px; }
+        .overdue-text { color: red; font-weight: bold; }
+        #loading { display:none; text-align:center; color: #3498db; font-weight: bold; padding: 10px; }
     </style>
 </head>
 <body>
@@ -49,7 +49,7 @@
             <div id="tab2" class="tab" onclick="switchTab('manage')">管理分頁</div>
         </div>
 
-        <div id="loading">處理中，請稍候...</div>
+        <div id="loading">連線中，請稍候...</div>
 
         <!-- 借用填表分頁 -->
         <div id="borrow-page" class="content active">
@@ -123,7 +123,7 @@
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzisQztHoZPWULdZrOa-NtwFflg0yj5JYFJm20LAa1pi1eQaosDY4lLdaB683m2rESKDw/exec"; // <-- 替換為你的網頁應用程式網址
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzisQztHoZPWULdZrOa-NtwFflg0yj5JYFJm20LAa1pi1eQaosDY4lLdaB683m2rESKDw/exec"; // <-- 這裡替換成部署網址
     let currentUser = {};
     let equipData = [];
     let isAdmin = false;
@@ -138,7 +138,7 @@
         currentUser = {};
     }
 
-    // 從首頁直接去管理
+    // 從首頁連結管理
     function goToManageFromHome() {
         document.getElementById('login-section').style.display = 'none';
         document.getElementById('main-section').style.display = 'block';
@@ -215,16 +215,20 @@
             res.data.reverse().forEach((row, idx) => {
                 const realIdx = res.data.length - 1 - idx;
                 const tr = document.createElement('tr');
+                
+                // 處理逾期文字顯示
+                const overdueDisplay = row[9] === "★" ? '<span class="overdue-text">已逾期</span>' : "";
+
                 tr.innerHTML = `
                     <td>${row[1]}</td>
                     <td>${row[4]}</td>
                     <td>${row[5]}</td>
                     <td>${new Date(row[3]).toLocaleDateString()}</td>
                     <td>${row[8] || '<span style="color:#95a5a6;">待處理</span>'}</td>
-                    <td style="color:red; font-weight:bold;">${row[9] || ''}</td>
+                    <td>${overdueDisplay}</td>
                     <td>
-                        <button onclick="updateStat(${realIdx}, '已領')" style="background:#f39c12; padding:5px; margin-bottom:5px; font-size:12px;">已領</button>
-                        <button onclick="updateStat(${realIdx}, '已歸還')" style="background:#27ae60; padding:5px; font-size:12px;">歸還</button>
+                        <button onclick="updateStat(${realIdx}, '已領')" style="background:#f39c12; padding:5px; margin-bottom:5px; font-size:12px; width:auto;">已領</button>
+                        <button onclick="updateStat(${realIdx}, '已歸還')" style="background:#27ae60; padding:5px; font-size:12px; width:auto;">歸還</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -245,7 +249,7 @@
         const name = document.getElementById('equipSelect').value;
         const item = equipData.find(i => i.name === name);
         
-        if (qty > item.stock) return alert("抱歉，借用數量已超過目前存貨量！");
+        if (qty > item.stock) return alert("借用數量已超過存貨！");
 
         document.getElementById('submitBtn').disabled = true;
         showLoading(true);
@@ -264,8 +268,7 @@
         if (res.success) {
             alert(res.msg);
             document.getElementById('borrowForm').reset();
-            document.getElementById('stockDisplay').innerText = "";
-            backToHome(); // 關鍵修改：回到首頁
+            backToHome(); 
         } else {
             alert(res.msg);
         }
@@ -295,7 +298,7 @@
             const res = await fetch(GAS_URL, { method: 'POST', body });
             return await res.json();
         } catch(e) {
-            return { success: false, msg: "連線失敗，請確認 GAS 是否已發布" };
+            return { success: false, msg: "連線失敗，請檢查網路或 GAS 部署" };
         }
     }
 
