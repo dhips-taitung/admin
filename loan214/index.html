@@ -26,6 +26,8 @@
         .stock-tag { color: #d35400; font-weight: bold; margin-top: 5px; height: 20px; }
         .overdue-text { color: red; font-weight: bold; }
         #loading { display:none; text-align:center; color: #3498db; font-weight: bold; padding: 10px; }
+        .email-input-group { display: flex; align-items: center; gap: 5px; }
+        .email-suffix { color: #555; font-weight: bold; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -36,9 +38,13 @@
     <!-- 申請首頁 -->
     <div id="login-section">
         <div class="form-group">
-            <label>請輸入學校信箱 (@dhips.ttct.edu.tw)：</label>
-            <input type="email" id="userEmail" placeholder="example@dhips.ttct.edu.tw">
-            <button onclick="verifyUser()">登入驗證</button>
+            <label>請輸入學校信箱帳號：</label>
+            <div class="email-input-group">
+                <input type="text" id="userAccount" placeholder="帳號" style="flex: 1;">
+                <span class="email-suffix">@dhips.ttct.edu.tw</span>
+            </div>
+            <div id="login-loading" style="display:none; text-align:center; color:#3498db; margin-top:10px;">連線中，請稍候...</div>
+            <button onclick="verifyUser()" style="margin-top:15px;">登入驗證</button>
             <button onclick="goToManageFromHome()" class="btn-secondary">前往管理分頁</button>
         </div>
     </div>
@@ -130,11 +136,10 @@
     let equipData = [];
     let isAdmin = false;
 
-    // 返回首頁功能
     function backToHome() {
         document.getElementById('main-section').style.display = 'none';
         document.getElementById('login-section').style.display = 'block';
-        document.getElementById('userEmail').value = "";
+        document.getElementById('userAccount').value = "";
         document.getElementById('adminPass').value = "";
         document.getElementById('borrowForm').reset();
         document.getElementById('stockDisplay').innerText = "";
@@ -149,13 +154,15 @@
         switchTab('manage');
     }
 
-    // 驗證使用者信箱
     async function verifyUser() {
-        const email = document.getElementById('userEmail').value.trim();
-        if(!email) return alert("請輸入信箱");
-        showLoading(true);
-        const res = await api('checkUser', { email });
-        showLoading(false);
+        const account = document.getElementById('userAccount').value.trim();
+        if(!account) return alert("請輸入帳號");
+        const fullEmail = account + "@dhips.ttct.edu.tw";
+        
+        document.getElementById('login-loading').style.display = 'block';
+        const res = await api('checkUser', { email: fullEmail });
+        document.getElementById('login-loading').style.display = 'none';
+
         if (res.success) {
             currentUser = res.data;
             document.getElementById('login-section').style.display = 'none';
@@ -166,7 +173,6 @@
         } else { alert(res.msg); }
     }
 
-    // 載入器材與庫存
     async function loadEquips() {
         const res = await api('getInitialData');
         if (res.success) {
@@ -192,18 +198,15 @@
         }
     }
 
-    // 提交申請
     document.getElementById('borrowForm').onsubmit = async (e) => {
         e.preventDefault();
         const submitBtn = document.getElementById('submitBtn');
-        const qtyInput = document.getElementById('quantity');
-        const qty = parseInt(qtyInput.value);
+        const qty = parseInt(document.getElementById('quantity').value);
         const name = document.getElementById('equipSelect').value;
         
         if (!name) return alert("請選擇器材");
-        
         const item = equipData.find(i => i.name === name);
-        if (item && qty > item.stock) return alert("借用數量(" + qty + ")已超過現有存貨(" + item.stock + ")！");
+        if (item && qty > item.stock) return alert("借用數量已超過現有存貨！");
 
         submitBtn.disabled = true;
         showLoading(true);
@@ -227,14 +230,13 @@
                 submitBtn.disabled = false;
             }
         } catch (err) {
-            alert("提交發生程式錯誤，請聯絡管理員。");
+            alert("提交發生錯誤，請聯絡管理員。");
             submitBtn.disabled = false;
         } finally {
             showLoading(false);
         }
     };
 
-    // 管理員登入
     async function verifyAdmin() {
         const pass = document.getElementById('adminPass').value;
         showLoading(true);
@@ -299,6 +301,7 @@
             document.getElementById('tab2').classList.add('active');
             if (isAdmin) {
                 document.getElementById('manage-page').classList.add('active');
+                loadRecords();
             } else {
                 document.getElementById('admin-auth').classList.add('active');
             }
@@ -311,7 +314,7 @@
             const res = await fetch(GAS_URL, { method: 'POST', body });
             return await res.json();
         } catch(e) {
-            return { success: false, msg: "連線失敗，請檢查網路或 GAS 部署網址。" };
+            return { success: false, msg: "連線失敗，請檢查 GAS 部署。" };
         }
     }
 
