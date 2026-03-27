@@ -1,119 +1,147 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>東海國小資訊器材借用系統</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>東海國小器材系統</title>
     <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
-        .tab { padding: 10px 20px; cursor: pointer; border: 1px solid transparent; }
-        .tab.active { border: 1px solid #ddd; border-bottom: 2px solid white; margin-bottom: -2px; font-weight: bold; }
+        :root { --primary: #2c3e50; --accent: #3498db; }
+        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .header { text-align: center; border-bottom: 2px solid #eee; margin-bottom: 25px; padding-bottom: 10px; }
+        .tab-box { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab { padding: 10px 25px; cursor: pointer; background: #eee; border-radius: 5px; transition: 0.3s; }
+        .tab.active { background: var(--accent); color: white; }
         .content { display: none; }
         .content.active { display: block; }
-        label { display: block; margin: 10px 0 5px; }
-        input, select, textarea { width: 100%; padding: 8px; box-sizing: border-box; }
-        button { margin-top: 15px; padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
-        button:disabled { background: #ccc; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 14px; }
-        .overdue { color: red; font-weight: bold; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
+        button:hover { opacity: 0.9; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+        th { background: #f8f9fa; border: 1px solid #ddd; padding: 12px; text-align: left; }
+        td { border: 1px solid #ddd; padding: 10px; }
+        .star { color: red; font-weight: bold; font-size: 18px; }
+        .loading-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); justify-content:center; align-items:center; z-index:999; }
     </style>
 </head>
 <body>
 
+<div id="loader" class="loading-overlay">處理中，請稍候...</div>
+
 <div class="container">
-    <h2>東海國小資訊器材借用系統</h2>
-    
+    <div class="header"><h2>東海國小資訊器材借用系統</h2></div>
+
+    <!-- 登入驗證 -->
     <div id="auth-section">
-        <label>請輸入學校 G-mail 驗證：</label>
-        <input type="email" id="userEmail" placeholder="example@dhips.ttct.edu.tw">
-        <button onclick="verifyEmail()">登入驗證</button>
+        <div class="form-group">
+            <label>請先以學校 G-mail 登入驗證</label>
+            <input type="email" id="loginEmail" placeholder="example@dhips.ttct.edu.tw">
+            <button onclick="verifyUser()" style="margin-top:10px">登入系統</button>
+        </div>
     </div>
 
+    <!-- 主功能區 -->
     <div id="main-section" style="display:none;">
-        <div class="tabs">
-            <div class="tab active" onclick="switchTab('borrow-tab')">借用填表</div>
-            <div class="tab" onclick="switchTab('manage-tab'); loadRecords();">管理分頁</div>
+        <div class="tab-box">
+            <div id="t1" class="tab active" onclick="showTab('borrow-page', 't1')">借用填表</div>
+            <div id="t2" class="tab" onclick="showTab('manage-page', 't2'); fetchRecords();">管理分頁</div>
         </div>
 
         <!-- 借用填表 -->
-        <div id="borrow-tab" class="content active">
+        <div id="borrow-page" class="content active">
             <form id="borrowForm">
-                <label>填表人：</label>
-                <input type="text" id="displayUserName" disabled>
-                
-                <label>借用日期：</label>
-                <input type="date" id="borrowDate" required>
-                
-                <label>預計歸還日：</label>
-                <input type="date" id="returnDate" required>
-                
-                <label>借用器材：</label>
-                <select id="equipSelect" onchange="updateEquipId()" required></select>
-                
-                <label>器材編號：</label>
-                <input type="text" id="equipId" disabled>
-                
-                <label>借用數量：</label>
-                <input type="number" id="quantity" value="1" min="1" required>
-                
-                <label>借用原因：</label>
-                <textarea id="reason"></textarea>
-                
-                <button type="submit" id="submitBtn">送出申請</button>
+                <div class="form-group">
+                    <label>申請人：</label>
+                    <input type="text" id="userDisplayName" disabled>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <div class="form-group" style="flex:1">
+                        <label>借用日期：</label>
+                        <input type="date" id="borrowDate" required>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>預計歸還日：</label>
+                        <input type="date" id="returnDate" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>借用器材：</label>
+                    <select id="equipList" onchange="syncEquipId()" required></select>
+                </div>
+                <div class="form-group">
+                    <label>器材編號：</label>
+                    <input type="text" id="equipId" readonly style="background:#f9f9f9">
+                </div>
+                <div class="form-group">
+                    <label>借用數量：</label>
+                    <input type="number" id="qty" value="1" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label>借用原因 (選填)：</label>
+                    <textarea id="reason" rows="3"></textarea>
+                </div>
+                <button type="submit" id="submitBtn">送出借用申請</button>
             </form>
         </div>
 
         <!-- 管理分頁 -->
-        <div id="manage-tab" class="content">
-            <table id="recordTable">
-                <thead>
-                    <tr>
-                        <th>時間</th><th>申請人</th><th>器材</th><th>歸還日</th><th>狀態</th><th>逾期</th><th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="recordBody"></tbody>
-            </table>
+        <div id="manage-page" class="content">
+            <div style="overflow-x: auto;">
+                <table id="recordTable">
+                    <thead>
+                        <tr>
+                            <th>姓名</th><th>器材</th><th>預計歸還</th><th>狀態</th><th>逾期</th><th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzisQztHoZPWULdZrOa-NtwFflg0yj5JYFJm20LAa1pi1eQaosDY4lLdaB683m2rESKDw/exec"; // <-- 請置換成你的 GAS 網頁應用程式網址
-    let currentUser = {};
-    let equipList = [];
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzisQztHoZPWULdZrOa-NtwFflg0yj5JYFJm20LAa1pi1eQaosDY4lLdaB683m2rESKDw/exec"; // <-- 這裡請貼上你的 GAS Web App URL
+    let userCache = null;
+    let equips = [];
 
-    async function verifyEmail() {
-        const email = document.getElementById('userEmail').value;
-        const res = await apiCall({ action: "checkUser", email: email });
+    async function verifyUser() {
+        const email = document.getElementById('loginEmail').value.trim();
+        if(!email) return alert("請輸入信箱");
         
-        if (res.success) {
-            currentUser = res.data;
+        toggleLoader(true);
+        const res = await callGAS({ action: "checkUser", email: email });
+        toggleLoader(false);
+
+        if(res.success) {
+            userCache = res.data;
             document.getElementById('auth-section').style.display = 'none';
             document.getElementById('main-section').style.display = 'block';
-            document.getElementById('displayUserName').value = currentUser.name;
-            loadInitialData();
+            document.getElementById('userDisplayName').value = userCache.name;
+            loadEquips();
         } else {
             alert(res.msg);
         }
     }
 
-    async function loadInitialData() {
-        const res = await apiCall({ action: "getInitialData" });
-        if (res.success) {
-            equipList = res.data;
-            const select = document.getElementById('equipSelect');
-            select.innerHTML = '<option value="">請選擇器材</option>';
-            equipList.forEach(item => {
-                select.innerHTML += `<option value="${item.name}">${item.name}</option>`;
+    async function loadEquips() {
+        const res = await callGAS({ action: "getInitialData" });
+        if(res.success) {
+            equips = res.data;
+            const select = document.getElementById('equipList');
+            select.innerHTML = '<option value="">-- 請選擇器材 --</option>';
+            equips.forEach(e => {
+                select.innerHTML += `<option value="${e.name}">${e.name}</option>`;
             });
         }
     }
 
-    function updateEquipId() {
-        const name = document.getElementById('equipSelect').value;
-        const item = equipList.find(i => i.name === name);
+    function syncEquipId() {
+        const name = document.getElementById('equipList').value;
+        const item = equips.find(e => e.name === name);
         document.getElementById('equipId').value = item ? item.id : "";
     }
 
@@ -121,42 +149,42 @@
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
         btn.disabled = true;
-        
-        const data = {
-            userName: currentUser.name,
-            userEmail: currentUser.email,
+        toggleLoader(true);
+
+        const formData = {
+            userName: userCache.name,
             borrowDate: document.getElementById('borrowDate').value,
             returnDate: document.getElementById('returnDate').value,
-            equipName: document.getElementById('equipSelect').value,
+            equipName: document.getElementById('equipList').value,
             equipId: document.getElementById('equipId').value,
-            quantity: document.getElementById('quantity').value,
+            quantity: document.getElementById('qty').value,
             reason: document.getElementById('reason').value
         };
 
-        const res = await apiCall({ action: "submitForm", data: data });
+        const res = await callGAS({ action: "submitForm", data: formData });
+        toggleLoader(false);
         alert(res.msg);
         btn.disabled = false;
-        if (res.success) document.getElementById('borrowForm').reset();
+        if(res.success) document.getElementById('borrowForm').reset();
     };
 
-    async function loadRecords() {
-        const res = await apiCall({ action: "getRecords" });
+    async function fetchRecords() {
+        const res = await callGAS({ action: "getRecords" });
         const tbody = document.getElementById('recordBody');
-        tbody.innerHTML = "讀取中...";
-        if (res.success) {
-            tbody.innerHTML = "";
-            res.data.forEach((row, index) => {
+        tbody.innerHTML = "";
+        if(res.success) {
+            res.data.reverse().forEach((row, i) => {
+                const originalIndex = res.data.length - 1 - i;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${new Date(row[0]).toLocaleDateString()}</td>
                     <td>${row[1]}</td>
                     <td>${row[4]}</td>
-                    <td>${new Date(row[3]).toLocaleDateString()}</td>
+                    <td>${formatDate(row[3])}</td>
                     <td>${row[8]}</td>
-                    <td class="overdue">${row[9] || ''}</td>
+                    <td class="star">${row[9] || ''}</td>
                     <td>
-                        <button onclick="updateStatus(${index}, '已領')">已領</button>
-                        <button onclick="updateStatus(${index}, '已歸還')">已歸還</button>
+                        <button onclick="updateStatus(${originalIndex}, '已領')" style="width:auto; padding:5px 10px; margin-bottom:5px">已領</button>
+                        <button onclick="updateStatus(${originalIndex}, '已歸還')" style="width:auto; padding:5px 10px; background:#27ae60">歸還</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -164,27 +192,41 @@
         }
     }
 
-    async function updateStatus(index, status) {
-        const res = await apiCall({ action: "updateStatus", row: index, status: status });
-        if (res.success) {
-            alert(status + " 更新成功");
-            loadRecords();
+    async function updateStatus(idx, status) {
+        toggleLoader(true);
+        const res = await callGAS({ action: "updateStatus", row: idx, status: status });
+        toggleLoader(false);
+        if(res.success) fetchRecords();
+    }
+
+    function showTab(id, tabId) {
+        document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+    }
+
+    async function callGAS(payload) {
+        try {
+            const response = await fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+            return await response.json();
+        } catch (e) {
+            console.error(e);
+            return { success: false, msg: "網路連線錯誤或網址無效" };
         }
     }
 
-    function switchTab(tabId) {
-        document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
-        event.currentTarget.classList.add('active');
+    function toggleLoader(show) {
+        document.getElementById('loader').style.display = show ? 'flex' : 'none';
     }
 
-    async function apiCall(payload) {
-        const response = await fetch(GAS_URL, {
-            method: "POST",
-            body: JSON.stringify(payload)
-        });
-        return await response.json();
+    function formatDate(dateStr) {
+        if(!dateStr) return "";
+        const d = new Date(dateStr);
+        return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
     }
 </script>
 
